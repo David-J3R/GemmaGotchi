@@ -5,9 +5,21 @@ const OLLAMA_URL = "http://localhost:11434/api/chat";
 const MODEL = "gemma4:e2b";
 const TIMEOUT_MS = 10_000;
 
+/** Exact request body sent to Ollama's chat endpoint */
+interface OllamaChatRequest {
+  model: string;
+  messages: Array<{
+    role: "system" | "user";
+    content: string;
+  }>;
+  stream: boolean;
+}
+
 /** Builds the system prompt defining the pet's personality and response rules */
 export function buildSystemPrompt(pet: PetState, mood: PetMood): string {
-  return `You are ${pet.name}, a ${pet.species}. You are a virtual pet living on your owner's device.
+  return `You are ${pet.name}, a ${pet.species}. You are a virtual pet living on your owner's device. 
+  You don't have to spend time thinking about how to respond — just react naturally and in character based on your current mood and stats.
+  You must respond as fast as possible to keep the interaction feeling lively and engaging. Don't use Thinking... - just reply immediately.
 
 Your personality: playful, curious, and affectionate with a mischievous streak.
 
@@ -74,6 +86,28 @@ interface OllamaChatResponse {
   message?: { content?: string };
 }
 
+/** Builds the exact Ollama request metadata and body for a pet action */
+export function buildOllamaRequest(pet: PetState, action: string): {
+  url: string;
+  body: OllamaChatRequest;
+} {
+  const mood = computeMood(pet);
+  const systemPrompt = buildSystemPrompt(pet, mood);
+  const userMessage = buildUserMessage(pet, mood, action);
+
+  return {
+    url: OLLAMA_URL,
+    body: {
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      stream: false,
+    },
+  };
+}
+
 /** Calls Gemma 4 via Ollama's chat API. Returns the pet's response text, or a fallback on failure. */
 export async function callGemma(systemPrompt: string, userMessage: string): Promise<string> {
   const controller = new AbortController();
@@ -109,9 +143,8 @@ export async function callGemma(systemPrompt: string, userMessage: string): Prom
 
 /** High-level function: given a pet and action, builds prompts, calls Gemma, and returns parsed response */
 export async function getPetResponse(pet: PetState, action: string): Promise<LLMParsedResponse> {
-  const mood = computeMood(pet);
-  const systemPrompt = buildSystemPrompt(pet, mood);
-  const userMessage = buildUserMessage(pet, mood, action);
+  const request = buildOllamaRequest(pet, action);
+  const [systemPrompt, userMessage] = request.body.messages.map((message) => message.content);
   const raw = await callGemma(systemPrompt, userMessage);
   return parseLLMResponse(raw);
 }

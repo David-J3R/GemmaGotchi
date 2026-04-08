@@ -177,7 +177,7 @@ happy:     (◕‿◕)
 content:   (・ω・)
 bored:     (−_−)
 sad:       (╥_╥)
-angry:     (╬ Ò﹏Ó)
+angry:     (Ò﹏Ó)
 sick:      (×_×;)
 exhausted: (−.−) zzz
 starving:  (;﹏;)
