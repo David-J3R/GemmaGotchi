@@ -39,6 +39,31 @@ export const BORED_HAPPINESS_THRESHOLD = 35;
 export const HAPPY_HAPPINESS_THRESHOLD = 60;
 export const ECSTATIC_HAPPINESS_THRESHOLD = 80;
 
+// ── Action stat effects ─────────────────────────────────────────────
+export const FEED_HUNGER = 25;
+export const FEED_HAPPINESS = 5;
+export const PLAY_HAPPINESS = 20;
+export const PLAY_ENERGY = -15;
+export const PLAY_HUNGER = -8;
+export const PET_HAPPINESS = 12;
+export const HEAL_HEALTH = 30;
+export const HEAL_HAPPINESS = -5;
+
+// ── Action edge-case thresholds ─────────────────────────────────────
+export const FEED_FULL_THRESHOLD = 90;
+export const PLAY_ENERGY_THRESHOLD = 15;
+export const HEAL_HEALTHY_THRESHOLD = 80;
+
+// ── Random event probabilities (per tick, 0-1) ──────────────────────
+export const EVENT_SHINY_OBJECT_CHANCE = 0.05;
+export const EVENT_STOMACH_GROWL_CHANCE = 0.3;
+export const EVENT_STOMACH_GROWL_HUNGER_THRESHOLD = 30;
+export const EVENT_DANCING_CHANCE = 0.15;
+export const EVENT_DANCING_HAPPINESS_THRESHOLD = 70;
+export const EVENT_YAWNING_CHANCE = 0.25;
+export const EVENT_YAWNING_ENERGY_THRESHOLD = 30;
+export const EVENT_BUTTERFLY_CHANCE = 0.08;
+
 // ── Progression ─────────────────────────────────────────────────────
 export const XP_PER_LEVEL_MULTIPLIER = 100;
 
