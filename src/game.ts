@@ -4,6 +4,7 @@ import { createPet, tick } from "./state.js";
 import { performAction } from "./actions.js";
 import { rollRandomEvents } from "./events.js";
 import { getPetResponse } from "./llm.js";
+import { grantXP, checkEvolution } from "./progression.js";
 import { renderDisplay, renderEvents, clearScreen } from "./display.js";
 import { TICK_INTERVAL_MS } from "./constants.js";
 
@@ -76,6 +77,14 @@ export async function startGame(name: string, species: string): Promise<void> {
       console.log("  (thinking...)");
       const response = await getPetResponse(pet, command);
       console.log(`\n  ${pet.name}: "${response.speech}"\n`);
+    }
+
+    // Grant XP and check for evolution
+    if (result.events.length > 0) {
+      const xpEvents = grantXP(pet, command);
+      pendingEvents.push(...xpEvents);
+      const evoEvent = checkEvolution(pet);
+      if (evoEvent) pendingEvents.push(evoEvent);
     }
 
     pendingEvents.push(...result.events);
