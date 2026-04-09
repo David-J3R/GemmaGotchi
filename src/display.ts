@@ -1,5 +1,6 @@
 import type { PetState, PetMood, GameEvent } from "./types.js";
 import { computeMood } from "./state.js";
+import { getBondLabel } from "./relationship.js";
 
 /** ASCII faces indexed by mood */
 const FACES: Record<PetMood, string> = {
@@ -42,7 +43,7 @@ export function renderDisplay(pet: PetState): string {
     `       ${face}`,
     "",
     `  ${pet.name} the ${pet.species}${sleepIndicator}${aliveIndicator}`,
-    `  Level ${pet.level} | Age: ${pet.age} ticks | Mood: ${mood}`,
+    `  Level ${pet.level} | Age: ${pet.age} ticks | Mood: ${mood} | Bond: ${getBondLabel(pet.relationship)}`,
     "",
     statBar("Hunger", pet.hunger),
     statBar("Happiness", pet.happiness),
@@ -65,6 +66,22 @@ export function renderEvents(events: GameEvent[]): string {
   if (events.length === 0) return "";
   const lines = events.map((e) => `  \x1b[33m★\x1b[0m ${e.message}`);
   return "\n" + lines.join("\n") + "\n";
+}
+
+/** Renders a welcome-back message after loading a save */
+export function renderWelcomeBack(name: string, summary: string): string {
+  const lines: string[] = [
+    "",
+    `  \x1b[36mWelcome back! ${name} missed you.\x1b[0m`,
+    `  ${summary}`,
+    "",
+  ];
+  return lines.join("\n");
+}
+
+/** Renders a brief "Saved" indicator */
+export function renderSaveIndicator(): string {
+  return "  \x1b[32m[Saved]\x1b[0m";
 }
 
 /** Clears the terminal screen */

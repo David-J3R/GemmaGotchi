@@ -1,4 +1,7 @@
 import type { PetState, PetMood, StatChanges, GameEvent } from "./types.js";
+import { generatePersonality } from "./personality.js";
+import { createMemory } from "./memory.js";
+import { createRelationship } from "./relationship.js";
 import {
   DEFAULT_HUNGER,
   DEFAULT_HAPPINESS,
@@ -34,7 +37,7 @@ function clamp(value: number): number {
   return Math.max(STAT_MIN, Math.min(STAT_MAX, value));
 }
 
-/** Creates a new pet with sensible default stats */
+/** Creates a new pet with sensible default stats and a generated personality */
 export function createPet(name: string, species: string): PetState {
   return {
     name,
@@ -49,6 +52,10 @@ export function createPet(name: string, species: string): PetState {
     isAlive: true,
     isSleeping: false,
     lastInteraction: Date.now(),
+    personality: generatePersonality(species),
+    memories: [],
+    petMemory: createMemory(),
+    relationship: createRelationship(),
   };
 }
 

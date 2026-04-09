@@ -28,6 +28,16 @@ describe("createPet", () => {
     assert.equal(pet.xp, 0);
     assert.equal(pet.age, 0);
   });
+
+  it("generates a personality on creation", () => {
+    const pet = createPet("Blob", "slime");
+    assert.ok(pet.personality, "Pet should have a personality");
+    assert.ok(pet.personality.traits, "Personality should have traits");
+    assert.ok(pet.personality.traits.playfulness >= 0 && pet.personality.traits.playfulness <= 100);
+    assert.ok(pet.personality.speechStyle, "Personality should have speechStyle");
+    assert.ok(Array.isArray(pet.personality.likes), "Personality should have likes array");
+    assert.ok(Array.isArray(pet.personality.dislikes), "Personality should have dislikes array");
+  });
 });
 
 describe("computeMood", () => {

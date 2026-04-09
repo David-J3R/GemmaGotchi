@@ -67,5 +67,16 @@ export const EVENT_BUTTERFLY_CHANCE = 0.08;
 // ── Progression ─────────────────────────────────────────────────────
 export const XP_PER_LEVEL_MULTIPLIER = 100;
 
+// ── Relationship events ────────────────────────────────────────────
+export const EVENT_PET_INITIATES_CHANCE = 0.1;
+
+// ── Persistence ────────────────────────────────────────────────────
+export const AUTO_SAVE_INTERVAL_MS = 60_000;
+export const MAX_OFFLINE_MINUTES = 1440;
+export const OFFLINE_DECAY_MULTIPLIER = 0.5;
+export const SAVE_VERSION = 1;
+export const MIN_OFFLINE_HEALTH = 5;
+export const ENGINE_VERSION = "0.1.0";
+
 // ── Game loop ───────────────────────────────────────────────────────
 export const TICK_INTERVAL_MS = 10_000;

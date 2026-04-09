@@ -11,6 +11,17 @@ export type PetMood =
   | "starving"
   | "critical";
 
+import type { PetPersonality } from "./personality.js";
+import type { PetMemory } from "./memory.js";
+import type { Relationship } from "./relationship.js";
+
+/** Re-export PetPersonality for convenience */
+export type { PetPersonality } from "./personality.js";
+/** Re-export PetMemory for convenience */
+export type { PetMemory } from "./memory.js";
+/** Re-export Relationship for convenience */
+export type { Relationship } from "./relationship.js";
+
 /** Core pet state representing all vital stats and metadata */
 export interface PetState {
   name: string;
@@ -25,6 +36,23 @@ export interface PetState {
   isAlive: boolean;
   isSleeping: boolean;
   lastInteraction: number;
+  personality: PetPersonality;
+  memories: string[];
+  petMemory: PetMemory;
+  relationship: Relationship;
+}
+
+/** Metadata stored alongside the save file */
+export interface SaveMeta {
+  version: number;
+  savedAt: string;
+  engineVersion: string;
+}
+
+/** Full save file structure: pet state + metadata */
+export interface SaveData {
+  _meta: SaveMeta;
+  pet: PetState;
 }
 
 /** Partial stat changes to apply to a pet */

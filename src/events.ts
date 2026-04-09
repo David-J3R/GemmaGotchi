@@ -8,6 +8,7 @@ import {
   EVENT_YAWNING_CHANCE,
   EVENT_YAWNING_ENERGY_THRESHOLD,
   EVENT_BUTTERFLY_CHANCE,
+  EVENT_PET_INITIATES_CHANCE,
 } from "./constants.js";
 
 /** Definition of a random event that can occur during a tick */
@@ -49,6 +50,14 @@ const RANDOM_EVENTS: RandomEventDef[] = [
   },
 ];
 
+/** Pet-initiated conversation prompts for bond level 2+ */
+const PET_INITIATION_MESSAGES: string[] = [
+  "tugs at your sleeve and looks up at you expectantly",
+  "nudges you gently, wanting your attention",
+  "makes a small noise and stares at you with big eyes",
+  "paws at you and tilts their head, clearly wanting to chat",
+];
+
 /** Rolls all random events for the current tick. Returns events that triggered. */
 export function rollRandomEvents(pet: PetState): GameEvent[] {
   if (!pet.isAlive || pet.isSleeping) return [];
@@ -68,4 +77,20 @@ export function rollRandomEvents(pet: PetState): GameEvent[] {
   }
 
   return triggered;
+}
+
+/** Checks if the pet wants to initiate a conversation (bond level 2+). Returns a trigger event or null. */
+export function rollPetInitiatedEvent(pet: PetState): GameEvent | null {
+  if (!pet.isAlive || pet.isSleeping) return null;
+  if (pet.relationship.bondLevel < 2) return null;
+  if (Math.random() >= EVENT_PET_INITIATES_CHANCE) return null;
+
+  const msgIndex = Math.floor(Math.random() * PET_INITIATION_MESSAGES.length);
+  const message = PET_INITIATION_MESSAGES[msgIndex]!;
+
+  return {
+    type: "pet_initiates",
+    message: `${pet.name} ${message}`,
+    timestamp: Date.now(),
+  };
 }
