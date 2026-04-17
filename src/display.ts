@@ -54,11 +54,48 @@ export function renderDisplay(pet: PetState): string {
     "",
     "\x1b[36m" + "═".repeat(40) + "\x1b[0m",
     "",
-    "\x1b[90m  Commands: feed | play | pet | sleep | heal | talk | show | status | quit\x1b[0m",
+    "\x1b[90m  Commands: /feed /play /pet /sleep /heal /show /status /help /quit\x1b[0m",
+    "\x1b[90m  Or just type anything to talk to your pet.\x1b[0m",
     "",
   ];
 
   return lines.join("\n");
+}
+
+/** Renders the /help screen listing available slash commands */
+export function renderHelp(): string {
+  const lines: string[] = [
+    "",
+    "  \x1b[36m── Help ──\x1b[0m",
+    "  \x1b[1m/feed\x1b[0m    Feed your pet",
+    "  \x1b[1m/play\x1b[0m    Play with your pet",
+    "  \x1b[1m/pet\x1b[0m     Pet your pet",
+    "  \x1b[1m/sleep\x1b[0m   Put your pet to sleep",
+    "  \x1b[1m/heal\x1b[0m    Give your pet medicine",
+    "  \x1b[1m/show\x1b[0m    Show your pet an image file",
+    "  \x1b[1m/status\x1b[0m  Show debug status",
+    "  \x1b[1m/help\x1b[0m    Show this help",
+    "  \x1b[1m/quit\x1b[0m    Save and exit",
+    "",
+    "  Anything else you type will be spoken to your pet.",
+    "",
+  ];
+  return lines.join("\n");
+}
+
+/** Starts an animated "thinking" spinner. Returns a function that stops it and clears the line. */
+export function startThinkingSpinner(label = "thinking"): () => void {
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  let i = 0;
+  process.stdout.write(`  \x1b[90m${frames[0]} ${label}...\x1b[0m`);
+  const interval = setInterval(() => {
+    i = (i + 1) % frames.length;
+    process.stdout.write(`\r  \x1b[90m${frames[i]} ${label}...\x1b[0m`);
+  }, 100);
+  return () => {
+    clearInterval(interval);
+    process.stdout.write("\r" + " ".repeat(label.length + 20) + "\r");
+  };
 }
 
 /** Renders game events as notification lines */

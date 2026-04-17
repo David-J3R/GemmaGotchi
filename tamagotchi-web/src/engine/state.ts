@@ -1,8 +1,7 @@
-import type { PetState, PetMood, StatChanges, GameEvent } from "./types.js";
-import { generatePersonality } from "./personality.js";
-import type { PetPersonality } from "./personality.js";
-import { createMemory } from "./memory.js";
-import { createRelationship } from "./relationship.js";
+import type { PetState, PetMood, StatChanges, GameEvent } from "./types";
+import { generatePersonality } from "./personality";
+import { createMemory } from "./memory";
+import { createRelationship } from "./relationship";
 import {
   DEFAULT_HUNGER,
   DEFAULT_HAPPINESS,
@@ -31,15 +30,15 @@ import {
   BORED_HAPPINESS_THRESHOLD,
   HAPPY_HAPPINESS_THRESHOLD,
   ECSTATIC_HAPPINESS_THRESHOLD,
-} from "./constants.js";
+} from "./constants";
 
 /** Clamps a value between STAT_MIN and STAT_MAX */
 function clamp(value: number): number {
   return Math.max(STAT_MIN, Math.min(STAT_MAX, value));
 }
 
-/** Creates a new pet with sensible default stats. Uses the provided personality if given, else generates one from the species template. */
-export function createPet(name: string, species: string, personality?: PetPersonality): PetState {
+/** Creates a new pet with sensible default stats and a generated personality */
+export function createPet(name: string, species: string): PetState {
   return {
     name,
     species,
@@ -53,7 +52,7 @@ export function createPet(name: string, species: string, personality?: PetPerson
     isAlive: true,
     isSleeping: false,
     lastInteraction: Date.now(),
-    personality: personality ?? generatePersonality(species),
+    personality: generatePersonality(species),
     memories: [],
     petMemory: createMemory(),
     relationship: createRelationship(),

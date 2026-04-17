@@ -1,5 +1,5 @@
-import type { PetState, ActionResult, GameEvent } from "./types.js";
-import { applyStatChanges, computeMood } from "./state.js";
+import type { PetState, ActionResult, GameEvent } from "./types";
+import { applyStatChanges, computeMood } from "./state";
 import {
   FEED_HUNGER,
   FEED_HAPPINESS,
@@ -12,7 +12,7 @@ import {
   HEAL_HEALTH,
   HEAL_HAPPINESS,
   HEAL_HEALTHY_THRESHOLD,
-} from "./constants.js";
+} from "./constants";
 
 /** Creates a GameEvent with the current timestamp */
 function makeEvent(type: string, message: string): GameEvent {
@@ -116,15 +116,14 @@ function buildLLMContext(pet: PetState, action: string, userInput?: string): str
   });
 }
 
-/** Talks to the pet — requires LLM to generate a response. If userInput is provided, it's the message the owner is saying. */
-function talk(pet: PetState, userInput?: string): ActionResult {
+/** Talks to the pet — requires LLM to generate a response. */
+function talk(pet: PetState): ActionResult {
   pet.lastInteraction = Date.now();
-  const trimmed = userInput?.trim();
   return {
-    message: trimmed ? `You say to ${pet.name}: "${trimmed}"` : `You talk to ${pet.name}...`,
-    events: [makeEvent("talk", trimmed ? `Owner said: "${trimmed}"` : `Owner talked to ${pet.name}`)],
+    message: `You talk to ${pet.name}...`,
+    events: [makeEvent("talk", `Owner talked to ${pet.name}`)],
     needsLLM: true,
-    llmContext: buildLLMContext(pet, "talk", trimmed),
+    llmContext: buildLLMContext(pet, "talk"),
   };
 }
 
@@ -140,7 +139,7 @@ function show(pet: PetState): ActionResult {
 }
 
 /** Routes a user action to the appropriate handler. Returns an ActionResult. */
-export function performAction(pet: PetState, actionName: string, userInput?: string): ActionResult {
+export function performAction(pet: PetState, actionName: string): ActionResult {
   if (!pet.isAlive) {
     return reject(`${pet.name} is no longer with us...`);
   }
@@ -151,7 +150,7 @@ export function performAction(pet: PetState, actionName: string, userInput?: str
     case "pet": return petAction(pet);
     case "sleep": return sleep(pet);
     case "heal": return heal(pet);
-    case "talk": return talk(pet, userInput);
+    case "talk": return talk(pet);
     case "show": return show(pet);
     default: return reject(`Unknown action: ${actionName}`);
   }

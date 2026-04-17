@@ -49,7 +49,7 @@ function clampRange(value: number, min: number, max: number): number {
 }
 
 /** Attempts to extract a JSON object from raw text, handling markdown code blocks */
-export function extractJSON(raw: string): string | null {
+function extractJSON(raw: string): string | null {
   const trimmed = raw.trim();
 
   // Try to extract from markdown code block first
@@ -67,21 +67,6 @@ export function extractJSON(raw: string): string | null {
   return null;
 }
 
-/** Cleans up common LLM JSON quirks: leading-plus numbers (`+2`) and trailing commas. */
-export function sanitizeJSON(jsonStr: string): string {
-  return jsonStr
-    .replace(/([:,\[]\s*)\+(\d)/g, "$1$2") // strip leading + from numbers at value positions
-    .replace(/,(\s*[}\]])/g, "$1");         // strip trailing commas
-}
-
-/** Last-resort fallback: extract the speech field from a malformed JSON-ish string. */
-function extractSpeechFallback(raw: string): string | null {
-  const match = raw.match(/"speech"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-  if (!match) return null;
-  // Decode common escape sequences
-  return match[1]!.replace(/\\"/g, '"').replace(/\\n/g, " ").replace(/\\\\/g, "\\").trim();
-}
-
 /** Parses and validates a raw LLM response into a PetResponse. Falls back gracefully on failure. */
 export function parseResponse(raw: string): PetResponse {
   const jsonStr = extractJSON(raw);
@@ -93,17 +78,7 @@ export function parseResponse(raw: string): PetResponse {
   try {
     parsed = JSON.parse(jsonStr) as Record<string, unknown>;
   } catch {
-    // Second attempt: sanitize common LLM JSON quirks
-    try {
-      parsed = JSON.parse(sanitizeJSON(jsonStr)) as Record<string, unknown>;
-    } catch {
-      // Last resort: pull the "speech" field out via regex if possible
-      const speech = extractSpeechFallback(raw);
-      if (speech) {
-        return { speech, emotion: "confused" };
-      }
-      return { speech: raw.trim(), emotion: "confused" };
-    }
+    return { speech: raw.trim(), emotion: "confused" };
   }
 
   // Validate required field: speech
@@ -168,8 +143,7 @@ RESPONSE FORMAT: You must respond with ONLY a JSON object, no other text. Schema
   "emotion": "one of: happy, excited, sleepy, angry, scared, love, confused, mischievous",
   "innerThought": "optional: your private thought (short, max 10 words)",
   "action": { "type": "request_food|request_play|request_sleep|refuse|gift|trick|explore", "intensity": 1-10 },
-  "moodShift": { "happiness": -10 to 10, "energy": -10 to 10 },
+  "moodShift": { "happiness": -10 to +10, "energy": -10 to +10 },
   "memory": "optional: something to remember about this moment"
 }
-Only include optional fields when relevant. Always include speech and emotion.
-Use plain numbers like 2 or -3. Do NOT prefix positive numbers with a + sign.`.trim();
+Only include optional fields when relevant. Always include speech and emotion.`.trim();

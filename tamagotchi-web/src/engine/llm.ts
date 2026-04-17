@@ -1,19 +1,14 @@
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import type { PetState, PetMood } from "./types.js";
-import type { PetResponse } from "./schema.js";
-import { computeMood } from "./state.js";
-import { buildPersonalityPrompt } from "./personality.js";
-import { parseResponse, RESPONSE_FORMAT_INSTRUCTION } from "./schema.js";
-import { buildMemoryPrompt } from "./memory.js";
-import { buildRelationshipPrompt } from "./relationship.js";
+import type { PetState, PetMood } from "./types";
+import type { PetResponse } from "./schema";
+import { computeMood } from "./state";
+import { buildPersonalityPrompt } from "./personality";
+import { parseResponse, RESPONSE_FORMAT_INSTRUCTION } from "./schema";
+import { buildMemoryPrompt } from "./memory";
+import { buildRelationshipPrompt } from "./relationship";
 
 const OLLAMA_URL = "http://localhost:11434/api/chat";
 const MODEL = "gemma4:e2b";
-const TIMEOUT_MS = 120_000;
-
-/** Valid image file extensions */
-const VALID_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png"]);
+const TIMEOUT_MS = 10_000;
 
 /** Context instruction appended when an image is included */
 const IMAGE_CONTEXT_INSTRUCTION = `Your owner is showing you something! Look at the image and react naturally.
@@ -46,7 +41,6 @@ export function buildSystemPrompt(pet: PetState, mood: PetMood): string {
   return `You are ${pet.name}, a ${pet.species}. You are a virtual pet living on your owner's device.
 You don't have to spend time thinking about how to respond — just react naturally and in character based on your current mood and stats.
 You must respond as fast as possible to keep the interaction feeling lively and engaging. Don't use Thinking... - just reply immediately.
-If the owner is unkind or insulting, include moodShift with negative happiness (-3 to -8 depending on severity). If they are kind or affectionate, use positive happiness
 
 ${personalitySection}
 
@@ -69,20 +63,13 @@ ${RESPONSE_FORMAT_INSTRUCTION}`;
 }
 
 /** Builds the user message including pet state as context */
-export function buildUserMessage(pet: PetState, mood: PetMood, userAction: string, userInput?: string): string {
-  const header = `[Pet state — mood: ${mood}, hunger: ${pet.hunger}, happiness: ${pet.happiness}, energy: ${pet.energy}, health: ${pet.health}]`;
-  const trimmed = userInput?.trim();
-  if (userAction === "talk" && trimmed) {
-    return `${header}
-Your owner says to you: "${trimmed}"
-Respond naturally, staying in character as ${pet.name}.`;
-  }
-  return `${header}
+export function buildUserMessage(pet: PetState, mood: PetMood, userAction: string): string {
+  return `[Pet state — mood: ${mood}, hunger: ${pet.hunger}, happiness: ${pet.happiness}, energy: ${pet.energy}, health: ${pet.health}]
 The owner performs action: ${userAction}`;
 }
 
 /** Re-export PetResponse for consumers */
-export type { PetResponse } from "./schema.js";
+export type { PetResponse } from "./schema";
 
 /** Response shape from the Ollama /api/chat endpoint */
 interface OllamaChatResponse {
@@ -109,21 +96,6 @@ export function buildOllamaRequest(pet: PetState, action: string): {
       stream: false,
     },
   };
-}
-
-/** Reads an image file and returns its base64 encoding, or null on failure */
-export async function loadImageAsBase64(filePath: string): Promise<string | null> {
-  const ext = path.extname(filePath).toLowerCase();
-  if (!VALID_IMAGE_EXTENSIONS.has(ext)) {
-    return null;
-  }
-
-  try {
-    const buffer = await fs.readFile(filePath);
-    return buffer.toString("base64");
-  } catch {
-    return null;
-  }
 }
 
 /** Calls Gemma 4 via Ollama's chat API. Returns the pet's response text, or a fallback on failure. */
@@ -165,10 +137,10 @@ export async function callGemma(systemPrompt: string, userMessage: string, image
 }
 
 /** High-level function: given a pet and action, builds prompts, calls Gemma, and returns parsed response */
-export async function getPetResponse(pet: PetState, action: string, imageBase64?: string, userInput?: string): Promise<PetResponse> {
+export async function getPetResponse(pet: PetState, action: string, imageBase64?: string): Promise<PetResponse> {
   const mood = computeMood(pet);
   const systemPrompt = buildSystemPrompt(pet, mood);
-  let userMessage = buildUserMessage(pet, mood, action, userInput);
+  let userMessage = buildUserMessage(pet, mood, action);
 
   if (imageBase64) {
     userMessage += `\n\n${IMAGE_CONTEXT_INSTRUCTION}`;

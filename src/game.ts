@@ -7,11 +7,12 @@ import { getPetResponse, buildOllamaRequest, loadImageAsBase64 } from "./llm.js"
 import type { PetResponse } from "./schema.js";
 import { addExchange, addMemory, needsConsolidation, consolidateMemories } from "./memory.js";
 import { grantXP, checkEvolution } from "./progression.js";
-import { renderDisplay, renderEvents, clearScreen, renderWelcomeBack, renderSaveIndicator } from "./display.js";
+import { renderDisplay, renderEvents, clearScreen, renderWelcomeBack, renderHelp, startThinkingSpinner } from "./display.js";
 import { TICK_INTERVAL_MS, AUTO_SAVE_INTERVAL_MS } from "./constants.js";
 import { updateRelationship } from "./relationship.js";
 import { computeMood } from "./state.js";
 import { savePet, loadPet, deleteSave, hasSaveFile, applyOfflineTime } from "./storage.js";
+import { generatePersonalityFromDescription } from "./personality.js";
 
 /** Starts and runs the game loop until the pet dies or the user quits */
 export async function startGame(name?: string, species?: string): Promise<void> {
@@ -45,11 +46,26 @@ export async function startGame(name?: string, species?: string): Promise<void> 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
+    prompt: "  > ",
   });
 
   let pendingEvents: GameEvent[] = [];
   let running = true;
   let interactedThisTick = false;
+  let isThinking = false;
+
+  // Re-displays the prompt + any in-progress input buffer after tick-driven
+  // redraws. Without this, the 10s gameTick's clearScreen wipes the user's
+  // partially-typed text off the screen while they're still typing.
+  function redrawPrompt(): void {
+    if (!running) return;
+    readline.cursorTo(process.stdout, 0);
+    readline.clearLine(process.stdout, 0);
+    process.stdout.write(rl.getPrompt() + rl.line);
+    if (rl.cursor < rl.line.length) {
+      readline.moveCursor(process.stdout, rl.cursor - rl.line.length, 0);
+    }
+  }
 
   /** Renders the current state to the terminal */
   function render(): void {
@@ -64,11 +80,16 @@ export async function startGame(name?: string, species?: string): Promise<void> 
       process.stdout.write(eventOutput);
     }
     process.stdout.write(renderDisplay(pet));
+    redrawPrompt();
   }
 
   /** Processes one game tick */
   function gameTick(): void {
     if (!running || !pet.isAlive) return;
+
+    // Pause tick processing entirely while an LLM call is in flight — prevents
+    // render/spinner/auto-save from fighting over the same terminal line.
+    if (isThinking) return;
 
     const tickEvents = tick(pet);
     const randomEvents = rollRandomEvents(pet);
@@ -83,7 +104,7 @@ export async function startGame(name?: string, species?: string): Promise<void> 
     const petInitEvent = rollPetInitiatedEvent(pet);
     if (petInitEvent) {
       pendingEvents.push(petInitEvent);
-      // Fire an LLM call where the pet starts the conversation
+      isThinking = true;
       getPetResponse(pet, "pet initiates conversation")
         .then((response) => {
           handlePetResponse(pet, response);
@@ -91,11 +112,15 @@ export async function startGame(name?: string, species?: string): Promise<void> 
           if (response.memory) {
             addMemory(pet.petMemory, response.memory);
           }
-          render();
         })
         .catch(() => {
           // Silently fail — pet just wanted to chat
+        })
+        .finally(() => {
+          isThinking = false;
+          render();
         });
+      return;
     }
 
     render();
@@ -186,9 +211,16 @@ export async function startGame(name?: string, species?: string): Promise<void> 
 
     const result = performAction(pet, "show");
     console.log(`\n  ${result.message}`);
-    console.log("  (thinking...)");
 
-    const response = await getPetResponse(pet, "show", imageBase64);
+    isThinking = true;
+    const stopSpinner = startThinkingSpinner(`${pet.name} is thinking`);
+    let response: PetResponse;
+    try {
+      response = await getPetResponse(pet, "show", imageBase64);
+    } finally {
+      stopSpinner();
+      isThinking = false;
+    }
     handlePetResponse(pet, response);
 
     addExchange(pet.petMemory, `show image: ${trimmedPath}`, response.speech);
@@ -211,26 +243,87 @@ export async function startGame(name?: string, species?: string): Promise<void> 
     render();
   }
 
-  /** Auto-save callback */
+  /** Handles free-form chat: user typed a message without a slash command. */
+  async function handleChat(userMessage: string): Promise<void> {
+    if (!pet.isAlive) {
+      console.log(`\n  ${pet.name} is no longer with us...`);
+      return;
+    }
+
+    interactedThisTick = true;
+
+    const result = performAction(pet, "talk", userMessage);
+    console.log(`\n  ${result.message}`);
+
+    isThinking = true;
+    const stopSpinner = startThinkingSpinner(`${pet.name} is thinking`);
+    let response: PetResponse;
+    try {
+      response = await getPetResponse(pet, "talk", undefined, userMessage);
+    } finally {
+      stopSpinner();
+      isThinking = false;
+    }
+    handlePetResponse(pet, response);
+
+    addExchange(pet.petMemory, userMessage, response.speech);
+    if (response.memory) {
+      addMemory(pet.petMemory, response.memory);
+      if (needsConsolidation(pet.petMemory)) {
+        await consolidateMemories(pet.petMemory);
+      }
+    }
+
+    if (result.events.length > 0) {
+      const xpEvents = grantXP(pet, "talk");
+      pendingEvents.push(...xpEvents);
+      const evoEvent = checkEvolution(pet);
+      if (evoEvent) pendingEvents.push(evoEvent);
+    }
+
+    pendingEvents.push(...result.events);
+    render();
+  }
+
+  /** Auto-save callback (runs silently to avoid disrupting the CLI) */
   async function autoSave(): Promise<void> {
     if (!running) return;
     try {
       await savePet(pet);
-      process.stdout.write(renderSaveIndicator() + "\n");
     } catch (err: unknown) {
+      // Only surface errors; successful saves are silent so they don't interrupt typing/spinner.
       console.error("  Warning: Auto-save failed:", (err as Error).message);
     }
   }
 
-  /** Handles a user command */
-  async function handleCommand(input: string): Promise<void> {
-    const command = input.trim().toLowerCase();
+  /** Valid stat-only actions that can be invoked via slash commands. */
+  const STAT_ACTIONS = new Set(["feed", "play", "pet", "sleep", "heal"]);
 
+  /** Handles a user's raw input: slash commands run actions, plain text is chat. */
+  async function handleInput(input: string): Promise<void> {
+    const trimmed = input.trim();
+    if (!trimmed) return; // ignore empty input
+
+    if (trimmed.startsWith("/")) {
+      const command = trimmed.slice(1).toLowerCase().split(/\s+/)[0] ?? "";
+      await handleSlashCommand(command);
+    } else {
+      await handleChat(trimmed);
+    }
+  }
+
+  /** Routes a slash command to its handler. */
+  async function handleSlashCommand(command: string): Promise<void> {
     if (command === "quit") {
       console.log(`\n  Saving...`);
       await savePet(pet);
       console.log(`  Goodbye! ${pet.name} will miss you.`);
       shutdown();
+      return;
+    }
+
+    if (command === "help") {
+      process.stdout.write(renderHelp());
       return;
     }
 
@@ -247,36 +340,21 @@ export async function startGame(name?: string, species?: string): Promise<void> 
       return;
     }
 
-    // Mark that the owner interacted this tick
     interactedThisTick = true;
 
-    // Special handling for show command — needs image file path
     if (command === "show") {
       await handleShowCommand();
+      return;
+    }
+
+    if (!STAT_ACTIONS.has(command)) {
+      console.log(`\n  Unknown command: /${command}. Type /help to see available commands.`);
       return;
     }
 
     const result = performAction(pet, command);
     console.log(`\n  ${result.message}`);
 
-    if (result.needsLLM) {
-      console.log("  (thinking...)");
-      const response = await getPetResponse(pet, command);
-      handlePetResponse(pet, response);
-
-      // Store conversation exchange in short-term memory
-      addExchange(pet.petMemory, command, response.speech);
-
-      // Store pet-generated memory in long-term memory
-      if (response.memory) {
-        addMemory(pet.petMemory, response.memory);
-        if (needsConsolidation(pet.petMemory)) {
-          await consolidateMemories(pet.petMemory);
-        }
-      }
-    }
-
-    // Grant XP and check for evolution
     if (result.events.length > 0) {
       const xpEvents = grantXP(pet, command);
       pendingEvents.push(...xpEvents);
@@ -325,9 +403,13 @@ export async function startGame(name?: string, species?: string): Promise<void> 
 
   // Process user input
   rl.on("line", (input) => {
-    handleCommand(input).catch((err: unknown) => {
-      console.error("  Error:", err);
-    });
+    handleInput(input)
+      .catch((err: unknown) => {
+        console.error("  Error:", err);
+      })
+      .finally(() => {
+        redrawPrompt();
+      });
   });
 
   // Handle clean exit
@@ -366,38 +448,22 @@ async function createNewPet(defaultName?: string, defaultSpecies?: string): Prom
       continue;
     }
 
-    console.log("\n  Choose a species:");
-    console.log("    1. Slime Creature  — playful, affectionate, loves food");
-    console.log("    2. Shadow Cat      — sassy, curious, independent");
-    console.log("    3. Cloud Puff      — energetic, dramatic, cuddly");
-    console.log("    4. Fire Sprite     — clever, mischievous, loyal");
-    console.log("    5. Crystal Turtle  — calm, wise, observant");
-
-    const speciesChoice = await ask("\n  Enter number (1-5): ");
-    const speciesMap: Record<string, string> = {
-      "1": "slime creature",
-      "2": "shadow cat",
-      "3": "cloud puff",
-      "4": "fire sprite",
-      "5": "crystal turtle",
-    };
-    const species = speciesMap[speciesChoice.trim()];
-    if (!species) {
-      console.log("  Invalid choice. Let's try again.\n");
-      continue;
+    const presetResult = await pickPreset(ask);
+    if (!presetResult) {
+      // User selected "describe your own" — run the custom flow
+      const custom = await createCustomPet(ask, trimmedName);
+      if (!custom) {
+        // User bailed out entirely during custom flow — restart from name prompt
+        console.log("\n  Let's try again!\n");
+        continue;
+      }
+      pet = custom;
+    } else {
+      pet = createPet(trimmedName, presetResult);
     }
 
-    pet = createPet(trimmedName, species);
-
     // Show personality preview
-    const t = pet.personality.traits;
-    const traitDesc = (name: string, val: number): string => {
-      if (val >= 70) return `very ${name}`;
-      if (val >= 50) return `quite ${name}`;
-      if (val >= 30) return `a bit ${name}`;
-      return `not very ${name}`;
-    };
-    console.log(`\n  Your ${trimmedName} is: ${traitDesc("playful", t.playfulness)}, ${traitDesc("curious", t.curiosity)}, ${traitDesc("affectionate", t.affection)}, ${traitDesc("sassy", t.sass)}`);
+    printPersonalityPreview(pet);
 
     const ready = await ask("\n  Ready to begin? (yes/no): ");
     if (ready.trim().toLowerCase() === "yes") {
@@ -410,4 +476,110 @@ async function createNewPet(defaultName?: string, defaultSpecies?: string): Prom
   rl.close();
   await savePet(pet);
   return pet;
+}
+
+/** Prints a short personality preview for the user to review. */
+function printPersonalityPreview(pet: PetState): void {
+  const t = pet.personality.traits;
+  const traitDesc = (name: string, val: number): string => {
+    if (val >= 70) return `very ${name}`;
+    if (val >= 50) return `quite ${name}`;
+    if (val >= 30) return `a bit ${name}`;
+    return `not very ${name}`;
+  };
+  console.log(
+    `\n  Your ${pet.name} the ${pet.species} is: ${traitDesc("playful", t.playfulness)}, ${traitDesc("curious", t.curiosity)}, ${traitDesc("affectionate", t.affection)}, ${traitDesc("sassy", t.sass)}`
+  );
+  if (pet.personality.likes.length > 0) {
+    console.log(`  Likes: ${pet.personality.likes.join(", ")}`);
+  }
+  if (pet.personality.dislikes.length > 0) {
+    console.log(`  Dislikes: ${pet.personality.dislikes.join(", ")}`);
+  }
+  if (pet.personality.speechStyle.quirks.length > 0) {
+    console.log(`  Quirks: ${pet.personality.speechStyle.quirks.join("; ")}`);
+  }
+}
+
+/** Prompts for a species choice. Returns the preset species name, or null if the user picked "describe your own". */
+async function pickPreset(ask: (q: string) => Promise<string>): Promise<string | null> {
+  const presets: Record<string, string> = {
+    "1": "slime creature",
+    "2": "shadow cat",
+    "3": "cloud puff",
+    "4": "fire sprite",
+    "5": "crystal turtle",
+  };
+
+  while (true) {
+    console.log("\n  Choose a species:");
+    console.log("    1. Slime Creature  — playful, affectionate, loves food");
+    console.log("    2. Shadow Cat      — sassy, curious, independent");
+    console.log("    3. Cloud Puff      — energetic, dramatic, cuddly");
+    console.log("    4. Fire Sprite     — clever, mischievous, loyal");
+    console.log("    5. Crystal Turtle  — calm, wise, observant");
+    console.log("    6. Describe your own!");
+
+    const choice = (await ask("\n  Enter number (1-6): ")).trim();
+    if (choice === "6") return null;
+    if (choice in presets) return presets[choice]!;
+    console.log("  Invalid choice. Let's try again.");
+  }
+}
+
+/** Runs the custom-pet creation flow. Returns null if the user aborts and wants to restart. */
+async function createCustomPet(ask: (q: string) => Promise<string>, petName: string): Promise<PetState | null> {
+  while (true) {
+    const description = (await ask("\n  Describe your pet in a sentence or two: ")).trim();
+    if (!description) {
+      console.log("  Please enter a description.");
+      continue;
+    }
+
+    console.log("");
+    const stopSpinner = startThinkingSpinner("Dreaming up your pet");
+    let result: { species: string; personality: import("./personality.js").PetPersonality } | null = null;
+    try {
+      result = await generatePersonalityFromDescription(description);
+    } catch {
+      result = null;
+    } finally {
+      stopSpinner();
+    }
+
+    if (!result) {
+      console.log("  Could not reach the pet designer.");
+      const next = (await ask("  (r)etry, (p)ick a preset, or (c)ancel? ")).trim().toLowerCase();
+      if (next === "r" || next === "retry") continue;
+      if (next === "p" || next === "preset") {
+        const preset = await pickPresetLoop(ask);
+        return createPet(petName, preset);
+      }
+      return null; // cancel
+    }
+
+    return createPet(petName, result.species, result.personality);
+  }
+}
+
+/** Forces the user to pick a preset (no option to bail to custom). */
+async function pickPresetLoop(ask: (q: string) => Promise<string>): Promise<string> {
+  const presets: Record<string, string> = {
+    "1": "slime creature",
+    "2": "shadow cat",
+    "3": "cloud puff",
+    "4": "fire sprite",
+    "5": "crystal turtle",
+  };
+  while (true) {
+    console.log("\n  Pick a preset species:");
+    console.log("    1. Slime Creature");
+    console.log("    2. Shadow Cat");
+    console.log("    3. Cloud Puff");
+    console.log("    4. Fire Sprite");
+    console.log("    5. Crystal Turtle");
+    const choice = (await ask("\n  Enter number (1-5): ")).trim();
+    if (choice in presets) return presets[choice]!;
+    console.log("  Invalid choice.");
+  }
 }

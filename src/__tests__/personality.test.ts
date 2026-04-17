@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { generatePersonality, buildPersonalityPrompt } from "../personality.js";
+import { generatePersonality, buildPersonalityPrompt, parsePersonalityResponse } from "../personality.js";
 import type { PetPersonality } from "../personality.js";
 
 describe("generatePersonality", () => {
@@ -142,5 +142,110 @@ describe("buildPersonalityPrompt", () => {
     assert.ok(!prompt.includes("You like:"), "Should not include empty likes");
     assert.ok(!prompt.includes("You dislike:"), "Should not include empty dislikes");
     assert.ok(!prompt.includes("Quirks:"), "Should not include empty quirks");
+  });
+});
+
+describe("parsePersonalityResponse", () => {
+  const cleanJSON = JSON.stringify({
+    species: "Mushroom Gnome",
+    traits: { playfulness: 35, curiosity: 85, affection: 60, sass: 55, energy: 25 },
+    vocabulary: "articulate",
+    expressiveness: "moderate",
+    quirks: ["mutters under breath", "clicks tongue when thinking"],
+    likes: ["damp moss", "pebbles"],
+    dislikes: ["dry air", "bright sun"],
+  });
+
+  it("parses a clean JSON response", () => {
+    const result = parsePersonalityResponse(cleanJSON, "fallback");
+    assert.equal(result.species, "mushroom gnome");
+    assert.equal(result.personality.traits.curiosity, 85);
+    assert.equal(result.personality.speechStyle.vocabulary, "articulate");
+    assert.equal(result.personality.speechStyle.expressiveness, "moderate");
+    assert.deepEqual(result.personality.speechStyle.quirks, ["mutters under breath", "clicks tongue when thinking"]);
+    assert.deepEqual(result.personality.likes, ["damp moss", "pebbles"]);
+  });
+
+  it("recovers from leading-+ numbers and trailing commas via sanitization", () => {
+    const dirty = `{
+      "species": "Bog Sprite",
+      "traits": { "playfulness": +72, "curiosity": 40, "affection": 50, "sass": 30, "energy": 65, },
+      "vocabulary": "casual",
+      "expressiveness": "dramatic",
+      "quirks": ["giggles at shadows", "hums softly"],
+      "likes": ["mud", "moonlight"],
+      "dislikes": ["sunlight"],
+    }`;
+    const result = parsePersonalityResponse(dirty, "fallback");
+    assert.equal(result.species, "bog sprite");
+    assert.equal(result.personality.traits.playfulness, 72);
+  });
+
+  it("clamps out-of-range trait values to 0-100", () => {
+    const oor = JSON.stringify({
+      species: "test",
+      traits: { playfulness: 999, curiosity: -50, affection: 50, sass: 50, energy: 50 },
+      vocabulary: "casual",
+      expressiveness: "moderate",
+      quirks: ["a"],
+      likes: ["b"],
+      dislikes: ["c"],
+    });
+    const result = parsePersonalityResponse(oor, "fallback");
+    assert.equal(result.personality.traits.playfulness, 100);
+    assert.equal(result.personality.traits.curiosity, 0);
+  });
+
+  it("falls back to 'casual' vocabulary when value is invalid", () => {
+    const bad = JSON.stringify({
+      species: "test",
+      traits: { playfulness: 50, curiosity: 50, affection: 50, sass: 50, energy: 50 },
+      vocabulary: "nonsense-value",
+      expressiveness: "also-bad",
+      quirks: ["a"],
+      likes: ["b"],
+      dislikes: ["c"],
+    });
+    const result = parsePersonalityResponse(bad, "fallback");
+    assert.equal(result.personality.speechStyle.vocabulary, "casual");
+    assert.equal(result.personality.speechStyle.expressiveness, "moderate");
+  });
+
+  it("falls back gracefully on completely unparsable input", () => {
+    const result = parsePersonalityResponse("the model said something random and not json at all", "mushroom gnome");
+    assert.equal(result.species, "mushroom gnome");
+    assert.ok(result.personality.traits.playfulness >= 0 && result.personality.traits.playfulness <= 100);
+    assert.ok(result.personality.likes.length > 0);
+    assert.ok(result.personality.speechStyle.quirks.length > 0);
+  });
+
+  it("sanitizes species name: lowercases, trims, caps length", () => {
+    const weird = JSON.stringify({
+      species: "   THE ETERNAL LORD OF COSMIC DREAD AND WHIMSY THE GRAND ",
+      traits: { playfulness: 50, curiosity: 50, affection: 50, sass: 50, energy: 50 },
+      vocabulary: "casual",
+      expressiveness: "moderate",
+      quirks: ["a"],
+      likes: ["b"],
+      dislikes: ["c"],
+    });
+    const result = parsePersonalityResponse(weird, "fallback");
+    assert.ok(result.species.length <= 30, `species was "${result.species}" (${result.species.length} chars)`);
+    assert.equal(result.species, result.species.toLowerCase());
+  });
+
+  it("falls back when arrays are empty or missing", () => {
+    const missing = JSON.stringify({
+      species: "void creature",
+      traits: { playfulness: 50, curiosity: 50, affection: 50, sass: 50, energy: 50 },
+      vocabulary: "casual",
+      expressiveness: "moderate",
+      quirks: [],
+      likes: [],
+      dislikes: [],
+    });
+    const result = parsePersonalityResponse(missing, "fallback");
+    assert.ok(result.personality.likes.length > 0, "empty likes should fall back");
+    assert.ok(result.personality.speechStyle.quirks.length > 0, "empty quirks should fall back");
   });
 });
