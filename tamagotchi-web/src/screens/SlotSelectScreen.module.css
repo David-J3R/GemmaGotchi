@@ -1,0 +1,40 @@
+.screen {
+  height: 100dvh;
+  min-height: 0;
+  background: var(--stage-bg);
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  opacity: 0.7;
+  margin-bottom: 1rem;
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}

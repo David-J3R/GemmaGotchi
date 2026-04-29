@@ -117,6 +117,60 @@ export async function listSaveSlots(): Promise<number[]> {
     .sort();
 }
 
+/** Bundle format for export/import */
+export interface SaveBundle {
+  version: number;
+  exportedAt: string;
+  slots: Record<string, string>;
+}
+
+/** Exports every save slot as a JSON-serializable bundle */
+export async function exportAllSaves(): Promise<SaveBundle> {
+  const slots = await listSaveSlots();
+  const out: Record<string, string> = {};
+  for (const s of slots) {
+    const raw = await get<string>(SLOT_PREFIX + s);
+    if (raw) out[String(s)] = raw;
+  }
+  return {
+    version: SAVE_VERSION,
+    exportedAt: new Date().toISOString(),
+    slots: out,
+  };
+}
+
+/** Restores a bundle, overwriting any existing slots it contains. Returns count restored. */
+export async function importAllSaves(bundle: unknown): Promise<number> {
+  if (!bundle || typeof bundle !== "object") {
+    throw new Error("Invalid save bundle");
+  }
+  const obj = bundle as Record<string, unknown>;
+  const slotsObj = obj["slots"];
+  if (!slotsObj || typeof slotsObj !== "object") {
+    throw new Error("Bundle missing slots");
+  }
+  let count = 0;
+  for (const [slot, raw] of Object.entries(slotsObj as Record<string, unknown>)) {
+    if (typeof raw !== "string") continue;
+    try {
+      JSON.parse(raw);
+    } catch {
+      continue;
+    }
+    await set(SLOT_PREFIX + slot, raw);
+    count += 1;
+  }
+  return count;
+}
+
+/** Deletes every save slot. */
+export async function clearAllData(): Promise<void> {
+  const slots = await listSaveSlots();
+  for (const s of slots) {
+    await del(SLOT_PREFIX + s);
+  }
+}
+
 /** Formats a duration in minutes to a human-readable string */
 function formatDuration(minutes: number): string {
   if (minutes < 1) return "less than a minute";

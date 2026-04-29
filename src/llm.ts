@@ -9,7 +9,7 @@ import { buildMemoryPrompt } from "./memory.js";
 import { buildRelationshipPrompt } from "./relationship.js";
 
 const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "gemma4:e2b";
+const MODEL = "bjoernb/gemma4-e2b-fast"; // Using the smaller, faster Gemma 4 variant for snappier responses
 const TIMEOUT_MS = 120_000;
 
 /** Valid image file extensions */

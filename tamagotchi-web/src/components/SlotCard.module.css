@@ -1,0 +1,85 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 2px solid var(--stat-card-border);
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.1s;
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.cardEmpty {
+  border: 2px dashed #86a88c;
+  background: rgba(255, 255, 255, 0.4);
+  justify-content: center;
+  text-align: center;
+  color: var(--text-primary);
+  padding: 1.5rem 1rem;
+}
+
+.previewWrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: var(--stage-bg);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.deleteBtn {
+  background: transparent;
+  border: none;
+  color: #c44;
+  font-size: 1.2rem;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  border-radius: 8px;
+}
+
+.deleteBtn:hover {
+  background: #fee;
+}
+
+.plusIcon {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-right: 0.5rem;
+  font-weight: 900;
+}
+
+.emptyLabel {
+  font-weight: 700;
+  font-size: 1rem;
+}

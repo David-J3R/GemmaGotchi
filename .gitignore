@@ -69,3 +69,5 @@ Thumbs.db
 *.bmp
 *.svg
 *.mp4
+
+# Exclude Claude

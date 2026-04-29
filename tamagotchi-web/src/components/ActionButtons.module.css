@@ -1,0 +1,45 @@
+.nav {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  padding: 0.5rem 0.25rem 0.75rem;
+  background: var(--nav-bg);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid var(--nav-border);
+}
+
+.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.25rem;
+  color: var(--nav-icon);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn:disabled {
+  color: var(--nav-icon-disabled);
+  opacity: 0.5;
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  fill: currentColor;
+}
+
+.label {
+  font-size: 0.82rem;
+}
