@@ -1,33 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
+
 :root {
-  /* App palette — derived from the mobile design reference */
-  --stage-bg: #6db87a;
+  /* === Pixel design tokens === */
+
+  /* Pixel scale unit — all spacing/borders snap to multiples */
+  --px: 2px;
+  --border-thin:   var(--px);                /* 2px */
+  --border-thick:  calc(var(--px) * 2);      /* 4px */
+  --border-chunky: calc(var(--px) * 4);      /* 8px */
+
+  /* Hard-edge offset shadows (no blur) */
+  --shadow-pixel:        4px 4px 0 #1a1a1a;
+  --shadow-pixel-press:  2px 2px 0 #1a1a1a;
+
+  /* Tap target floor (Apple HIG) */
+  --tap-min: 44px;
+
+  /* LCD palette */
+  --lcd-bg:            #a8c08a;
+  --lcd-ink:           #2d3a1f;
+  --lcd-ink-faint:     rgba(45, 58, 31, 0.35);
+
+  /* Device shell — defaults; overridden per species via inline style on root device element */
+  --device-shell:        #f0c8d0;
+  --device-shell-shadow: #c89aa3;
+  --device-bezel:        #1a1a1a;
+
+  /* Status LED colors */
+  --led-red:    #e84545;
+  --led-amber:  #f5a524;
+  --led-green:  #5b8c3e;
+  --led-off:    #555555;
+
+  /* Wallpaper behind the device */
+  --stage-bg:      #6db87a;
   --stage-bg-dark: #4d9a5e;
-  --top-bar-bg: #ffffff;
+
+  /* Text */
   --text-primary: #1a1a1a;
-  --text-muted: #555;
+  --text-muted:   #555555;
   --text-inverse: #ffffff;
 
-  --stat-card-bg: #f6d77a;
-  --stat-card-border: #e0ba4c;
-  --stat-fill-green: #5b8c3e;
+  /* Chat bubbles */
+  --bubble-pet-bg:        #6ba1d8;
+  --bubble-pet-text:      #ffffff;
+  --bubble-user-bg:       #ffffff;
+  --bubble-user-text:     #1a1a1a;
+  --bubble-user-border:   #1a1a1a;
+
+  /* Stat fill (used by SegmentedBar when explicit color not set) */
+  --stat-fill-green:  #5b8c3e;
   --stat-fill-yellow: #c4a020;
-  --stat-fill-red: #a03030;
+  --stat-fill-red:    #a03030;
 
-  --bubble-pet-bg: #6ba1d8;
-  --bubble-pet-text: #ffffff;
-  --bubble-user-bg: #ffffff;
-  --bubble-user-text: #1a1a1a;
-  --bubble-user-border: #d8d8d8;
+  /* Fonts */
+  --pixel:         "Silkscreen", "Press Start 2P", "Courier New", monospace;
+  --display-pixel: "Silkscreen", "Press Start 2P", "Courier New", monospace;
+  --sans:          "Nunito", system-ui, "Segoe UI", Roboto, sans-serif;
 
-  --nav-bg: #ffffff;
-  --nav-border: #e0e0e0;
-  --nav-icon: #1a1a1a;
-  --nav-icon-disabled: #b0b0b0;
-
-  --accent: #1a1a1a;
-
-  --sans: "Nunito", system-ui, "Segoe UI", Roboto, sans-serif;
-  --pixel: "Silkscreen", "Nunito", monospace;
+  /* === Transitional aliases — referenced by components that will be deleted
+     or restyled in Tasks 11–15. Removed in Task 15 (Cleanup) when no longer
+     referenced. Do not add new usages. === */
+  --stat-card-bg:       #f6d77a;
+  --stat-card-border:   #e0ba4c;
+  --accent:             var(--text-primary);
+  --top-bar-bg:         #ffffff;
+  --nav-bg:             #ffffff;
+  --nav-border:         #e0e0e0;
+  --nav-icon:           var(--text-primary);
+  --nav-icon-disabled:  #b0b0b0;
 
   font: 16px/1.4 var(--sans);
   color: var(--text-primary);
@@ -36,6 +77,14 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pixel art rendering — pin canvases and pixel-marked images to integer scaling */
+canvas,
+img.pixel,
+svg.pixel {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 * {
@@ -73,12 +122,12 @@ button:disabled {
   cursor: default;
 }
 
-h1,
-h2,
-h3 {
-  font-weight: 700;
+h1, h2, h3 {
+  font-family: var(--display-pixel);
+  font-weight: 400;
   color: var(--text-primary);
   margin: 0;
+  letter-spacing: 0.05em;
 }
 
 p {
