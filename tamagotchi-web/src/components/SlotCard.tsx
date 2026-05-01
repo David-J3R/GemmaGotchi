@@ -36,10 +36,17 @@ export function SlotCard({
 }: OccupiedProps) {
   const mood = computeMood(pet);
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       className={styles.card}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       aria-label={`Open ${pet.name}`}
     >
       <div className={styles.previewWrap}>
@@ -59,6 +66,7 @@ export function SlotCard({
         <div className={styles.meta}>{relativeTime(lastPlayed)}</div>
       </div>
       <button
+        type="button"
         className={styles.deleteBtn}
         aria-label="Delete pet"
         onClick={(e) => {
@@ -68,7 +76,7 @@ export function SlotCard({
       >
         ×
       </button>
-    </button>
+    </div>
   );
 }
 
