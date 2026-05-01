@@ -1,0 +1,46 @@
+.btn {
+  --btn-bg: var(--device-shell);
+  --btn-bg-shadow: var(--device-shell-shadow);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 6px 4px;
+  background: var(--btn-bg);
+  border: var(--border-thick) solid var(--device-bezel);
+  border-radius: calc(var(--px) * 2);
+  box-shadow: var(--shadow-pixel);
+  font-family: var(--pixel);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  transition: transform 0.05s linear, box-shadow 0.05s linear;
+}
+
+.btn:active:not(:disabled),
+.btn[data-pressed="true"]:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-pixel-press);
+}
+
+.btn:disabled {
+  background: var(--btn-bg-shadow);
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  text-transform: uppercase;
+  font-weight: 700;
+}
