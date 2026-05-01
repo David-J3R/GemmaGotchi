@@ -1,0 +1,24 @@
+.bar {
+  --seg-ink: currentColor;
+  --seg-bg: transparent;
+  display: inline-flex;
+  align-items: stretch;
+  gap: var(--px);
+  padding: var(--px);
+  background: var(--seg-bg);
+  border: var(--border-thin) solid var(--seg-ink);
+}
+
+.seg {
+  flex: 1 1 0;
+  min-width: calc(var(--px) * 2);
+  border-right: var(--px) solid var(--seg-ink);
+}
+
+.seg:last-child {
+  border-right: none;
+}
+
+.sm { height: 8px; }
+.md { height: 14px; }
+.lg { height: 22px; }
