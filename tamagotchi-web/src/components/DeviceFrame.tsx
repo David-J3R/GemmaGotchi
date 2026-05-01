@@ -19,11 +19,11 @@ interface Props {
 }
 
 const SHELL_BY_SPECIES: Record<string, [string, string]> = {
-  slime:   ["#cdb4ff", "#9d80d6"],
-  shadow:  ["#bcd2ff", "#8ea4d0"],
-  cloud:   ["#ffd7e1", "#d99fae"],
-  fire:    ["#ffd5a8", "#d6a368"],
-  crystal: ["#bff0d6", "#7dc7a3"],
+  "slime creature":   ["#cdb4ff", "#9d80d6"],
+  "shadow cat":       ["#bcd2ff", "#8ea4d0"],
+  "cloud puff":       ["#ffd7e1", "#d99fae"],
+  "fire sprite":      ["#ffd5a8", "#d6a368"],
+  "crystal turtle":   ["#bff0d6", "#7dc7a3"],
 };
 
 export function DeviceFrame({
@@ -35,7 +35,7 @@ export function DeviceFrame({
   onBack,
   onOpenSettings,
 }: Props) {
-  const [shell, shadow] = SHELL_BY_SPECIES[pet.species] ?? SHELL_BY_SPECIES.cloud;
+  const [shell, shadow] = SHELL_BY_SPECIES[pet.species] ?? SHELL_BY_SPECIES["cloud puff"];
   const bondLabel = getBondLabel(pet.relationship);
 
   return (
