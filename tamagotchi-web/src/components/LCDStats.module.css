@@ -1,0 +1,70 @@
+.lcd {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--lcd-bg);
+  color: var(--lcd-ink);
+  font-family: var(--pixel);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 6px;
+}
+
+.xpRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xpLabel {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.statsRow,
+.statsRowBottom {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.statsRowBottom {
+  margin-top: auto;
+}
+
+.statTile {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  color: var(--lcd-ink);
+  min-height: 24px;
+}
+
+.peek {
+  position: absolute;
+  bottom: -16px;
+  left: 0;
+  background: var(--lcd-ink);
+  color: var(--lcd-bg);
+  font-size: 9px;
+  padding: 2px 4px;
+  z-index: 2;
+}
+
+.spriteSpacer {
+  flex: 1 1 auto;
+}
+
+.moodSlot {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

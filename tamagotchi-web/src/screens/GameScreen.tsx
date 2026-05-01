@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGameEngine } from "../hooks/useGameEngine";
 import { useLLM } from "../hooks/useLLM";
 import { PetViewport } from "../components/PetViewport";
-import { StatsBar } from "../components/StatsBar";
-import { ActionButtons, type NavAction } from "../components/ActionButtons";
+import { DeviceFrame } from "../components/DeviceFrame";
 import {
   PetBubble,
   UserBubble,
@@ -16,13 +15,6 @@ interface Props {
   onBack: () => void;
   onOpenSettings: () => void;
 }
-
-const NAV_TO_ENGINE: Record<Exclude<NavAction, "home">, string> = {
-  play: "play",
-  heal: "heal",
-  eat: "feed",
-  sleep: "sleep",
-};
 
 export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
   const {
@@ -53,12 +45,13 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
   }, [slot, loadSlot]);
 
   useEffect(() => {
-    const chat = chatRef.current;
-    if (!chat) return;
-    chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
+    chatRef.current?.scrollTo({
+      top: chatRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [pet?.petMemory.shortTerm.length, isThinking, pendingMsg, pendingImage]);
 
-  // Desktop keyboard shortcuts: F=feed, P=play, T=talk, S=sleep
+  // Keyboard shortcuts: F=feed, P=play, H=heal, S=sleep, T=focus chat input.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -67,17 +60,19 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
       switch (e.key.toLowerCase()) {
         case "f":
           e.preventDefault();
-          setIsEating(true);
-          setTimeout(() => setIsEating(false), 900);
-          doAction("feed");
+          handleAction("feed");
           break;
         case "p":
           e.preventDefault();
-          doAction("play");
+          handleAction("play");
+          break;
+        case "h":
+          e.preventDefault();
+          handleAction("heal");
           break;
         case "s":
           e.preventDefault();
-          doAction("sleep");
+          handleAction("sleep");
           break;
         case "t":
           e.preventDefault();
@@ -87,31 +82,26 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [doAction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  if (isLoading) {
-    return <div className={styles.loadingCenter}>Loading...</div>;
-  }
+  if (isLoading) return <div className={styles.loadingCenter}>Loading...</div>;
 
   if (!pet || !mood) {
     return (
       <div className={styles.loadingCenter}>
         <p>No pet found in this slot.</p>
-        <button onClick={onBack}>Back to Slots</button>
+        <button onClick={onBack} className={styles.fallbackBackBtn}>Back to Slots</button>
       </div>
     );
   }
 
-  const handleNav = (action: NavAction) => {
-    if (action === "home") {
-      onBack();
-      return;
-    }
-    if (action === "eat") {
+  const handleAction = (action: "feed" | "play" | "heal" | "sleep") => {
+    if (action === "feed") {
       setIsEating(true);
       setTimeout(() => setIsEating(false), 900);
     }
-    doAction(NAV_TO_ENGINE[action]);
+    doAction(action);
   };
 
   const handleSend = () => {
@@ -124,13 +114,8 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
 
   const handleClearConversation = () => {
     if (isThinking || history.length === 0) return;
-    const ok = window.confirm(
-      "Delete this conversation history? This removes the visible chat for this pet.",
-    );
-    if (!ok) return;
-    clearConversation().catch(() => {
-      setImageError("Could not delete the conversation. Try again.");
-    });
+    if (!window.confirm("Delete this conversation history?")) return;
+    clearConversation().catch(() => setImageError("Could not delete the conversation."));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -143,7 +128,7 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
   const handleImageClick = () => {
     setImageError(null);
     if (!supportsImages) {
-      setImageError("Current model doesn't support images. Enable Ollama with a multimodal model to share pictures.");
+      setImageError("Current model doesn't support images.");
       return;
     }
     fileInputRef.current?.click();
@@ -170,114 +155,117 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
   };
 
   const history = pet.petMemory.shortTerm;
+  const petSprite = (
+    <PetViewport
+      species={pet.species}
+      mood={mood}
+      isSleeping={pet.isSleeping}
+      isEating={isEating}
+      pixelScale={7}
+      background={false}
+    />
+  );
 
   return (
     <div className={styles.screen}>
-      <StatsBar pet={pet} mood={mood} />
+      <DeviceFrame
+        pet={pet}
+        mood={mood}
+        isThinking={isThinking}
+        petSprite={petSprite}
+        onAction={handleAction}
+        onBack={onBack}
+        onOpenSettings={onOpenSettings}
+      />
 
-      <div className={styles.stage}>
-        <button className={styles.backBtn} onClick={onBack}>
-          ← Back
-        </button>
-        <button
-          className={styles.settingsBtn}
-          onClick={onOpenSettings}
-          aria-label="Settings"
-        >
-          ⚙
-        </button>
-        <button
-          className={styles.clearChatBtn}
-          onClick={handleClearConversation}
-          disabled={isThinking || history.length === 0}
-          aria-label="Delete conversation"
-          title="Delete conversation"
-        >
-          ×
-        </button>
-        <PetViewport
-          species={pet.species}
-          mood={mood}
-          isSleeping={pet.isSleeping}
-          isEating={isEating}
-          pixelScale={6}
-          background={false}
-        />
-      </div>
+      <div className={styles.chatPanel}>
+        <div className={styles.chatHeader}>
+          <span className={styles.chatTitle}>CHAT</span>
+          <button
+            type="button"
+            className={styles.clearChatBtn}
+            onClick={handleClearConversation}
+            disabled={isThinking || history.length === 0}
+            aria-label="Clear conversation"
+          >
+            ×
+          </button>
+        </div>
+        <div className={styles.chat} ref={chatRef}>
+          <div className={styles.chatList}>
+            {history.map((ex, i) => {
+              const isLatest = i === history.length - 1;
+              return (
+                <div key={`h-${i}`}>
+                  {ex.userMessage && !ex.userMessage.startsWith("[action:") && (
+                    <UserBubble text={ex.userMessage} />
+                  )}
+                  <PetBubble
+                    petName={pet.name}
+                    text={ex.petResponse}
+                    typewriter={false}
+                    emotion={isLatest ? lastResponse?.emotion : undefined}
+                    thought={isLatest ? lastResponse?.innerThought : undefined}
+                    moodShift={isLatest ? lastResponse?.moodShift : undefined}
+                  />
+                </div>
+              );
+            })}
+            {(pendingMsg || pendingImage) && (
+              <UserBubble
+                text={pendingMsg || undefined}
+                imageSrc={pendingImage ?? undefined}
+              />
+            )}
+            {isThinking && <TypingBubble petName={pet.name} />}
+            <div ref={chatEndRef} />
+          </div>
+        </div>
 
-      <div className={styles.chat} ref={chatRef}>
-        <div className={styles.chatList}>
-          {history.map((ex, i) => {
-            const isLatest = i === history.length - 1;
-            return (
-              <div key={`h-${i}`}>
-                {ex.userMessage && !ex.userMessage.startsWith("[action:") && (
-                  <UserBubble text={ex.userMessage} />
-                )}
-                <PetBubble
-                  petName={pet.name}
-                  text={ex.petResponse}
-                  typewriter={false}
-                  emotion={isLatest ? lastResponse?.emotion : undefined}
-                  thought={isLatest ? lastResponse?.innerThought : undefined}
-                  moodShift={isLatest ? lastResponse?.moodShift : undefined}
-                />
-              </div>
-            );
-          })}
-          {(pendingMsg || pendingImage) && (
-            <UserBubble
-              text={pendingMsg || undefined}
-              imageSrc={pendingImage ?? undefined}
-            />
-          )}
-          {isThinking && <TypingBubble petName={pet.name} />}
-          <div ref={chatEndRef} />
+        {imageError && (
+          <div className={styles.imageError} onClick={() => setImageError(null)}>
+            {imageError}
+          </div>
+        )}
+
+        <div className={styles.inputRow}>
+          <button
+            type="button"
+            className={styles.imageBtn}
+            onClick={handleImageClick}
+            disabled={isThinking}
+            aria-label="Send image"
+          >
+            +
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className={styles.hiddenFile}
+            onChange={handleFileChange}
+          />
+          <input
+            ref={textInputRef}
+            type="text"
+            className={styles.textInput}
+            placeholder={`Say something to ${pet.name}...`}
+            value={userMessage}
+            onChange={(e) => setUserMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isThinking}
+          />
+          <button
+            type="button"
+            className={styles.sendBtn}
+            onClick={handleSend}
+            disabled={isThinking || !userMessage.trim()}
+            aria-label="Send"
+          >
+            ▶
+          </button>
         </div>
       </div>
-
-      {imageError && (
-        <div className={styles.imageError} onClick={() => setImageError(null)}>
-          {imageError}
-        </div>
-      )}
-
-      <div className={styles.inputRow}>
-        <button
-          className={styles.imageBtn}
-          onClick={handleImageClick}
-          disabled={isThinking}
-        >
-          <span className={styles.imageBtnIcon}>+</span>
-          <span>Show image</span>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className={styles.hiddenFile}
-          onChange={handleFileChange}
-        />
-        <input
-          ref={textInputRef}
-          type="text"
-          className={styles.textInput}
-          placeholder={`Say something to ${pet.name}...`}
-          value={userMessage}
-          onChange={(e) => setUserMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isThinking}
-        />
-        <button
-          className={styles.sendBtn}
-          onClick={handleSend}
-          disabled={isThinking || !userMessage.trim()}
-        >
-          Send
-        </button>
-      </div>
-
-      <ActionButtons onAction={handleNav} disabled={isThinking} />
     </div>
   );
 }
