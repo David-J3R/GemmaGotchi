@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useGameEngine } from "../hooks/useGameEngine";
 import { createPet } from "../engine/state";
 import { PetViewport } from "../components/PetViewport";
+import { SegmentedBar } from "../components/SegmentedBar";
 import type { PetState } from "../engine/types";
 import type { PetTraits } from "../engine/personality";
 import styles from "./CreatePetScreen.module.css";
@@ -164,12 +165,15 @@ export function CreatePetScreen({ slot, onCreated, onBack }: Props) {
               return (
                 <div key={k} className={styles.traitRow}>
                   <span className={styles.traitLabel}>{TRAIT_LABELS[k]}</span>
-                  <div className={styles.traitBarBg}>
-                    <div
-                      className={styles.traitBarFill}
-                      style={{ width: `${value}%` }}
-                    />
-                  </div>
+                  <SegmentedBar
+                    value={value / 100}
+                    segments={5}
+                    size="md"
+                    fillColor="var(--lcd-ink)"
+                    inkColor="var(--lcd-ink)"
+                    bgColor="var(--lcd-bg)"
+                    ariaLabel={TRAIT_LABELS[k]}
+                  />
                   <span className={styles.traitValue}>{value}</span>
                 </div>
               );
