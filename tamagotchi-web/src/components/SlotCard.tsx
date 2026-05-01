@@ -36,7 +36,12 @@ export function SlotCard({
 }: OccupiedProps) {
   const mood = computeMood(pet);
   return (
-    <div className={styles.card} onClick={onClick}>
+    <button
+      type="button"
+      className={styles.card}
+      onClick={onClick}
+      aria-label={`Open ${pet.name}`}
+    >
       <div className={styles.previewWrap}>
         <PetViewport
           species={pet.species}
@@ -63,15 +68,20 @@ export function SlotCard({
       >
         ×
       </button>
-    </div>
+    </button>
   );
 }
 
 export function EmptySlotCard({ onClick }: EmptyProps) {
   return (
-    <div className={`${styles.card} ${styles.cardEmpty}`} onClick={onClick}>
+    <button
+      type="button"
+      className={`${styles.card} ${styles.cardEmpty}`}
+      onClick={onClick}
+      aria-label="Create new pet in this slot"
+    >
       <span className={styles.plusIcon}>+</span>
       <span className={styles.emptyLabel}>New Pet</span>
-    </div>
+    </button>
   );
 }
