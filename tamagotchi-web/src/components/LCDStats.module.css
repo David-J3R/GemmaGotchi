@@ -20,6 +20,7 @@
 .xpLabel {
   font-size: 9px;
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .statsRow,
@@ -44,6 +45,18 @@
   padding: 4px 0;
   color: var(--lcd-ink);
   min-height: 24px;
+}
+
+.statValue {
+  font-family: var(--pixel);
+  font-size: 9px;
+  min-width: 14px;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+.statValueCritical {
+  color: var(--stat-fill-red);
 }
 
 .peek {

@@ -12,6 +12,11 @@ interface Props {
 
 type StatKey = "hunger" | "happiness" | "energy" | "health";
 
+const CRITICAL_THRESHOLD = 30;
+const STAT_SEGMENTS = 4;
+const XP_PER_LEVEL = 100;
+const XP_SEGMENTS = 10;
+
 export function LCDStats({ pet, mood }: Props) {
   const [peeking, setPeeking] = useState<StatKey | null>(null);
 
@@ -22,18 +27,18 @@ export function LCDStats({ pet, mood }: Props) {
     { key: "health",    value: pet.health,    label: "Health" },
   ];
 
-  const xpPerLevel = 100;
-  const xpInLevel = pet.xp % xpPerLevel;
+  const xpInLevel = pet.xp % XP_PER_LEVEL;
 
   return (
     <div className={styles.lcd}>
       <div className={styles.xpRow}>
-        <span className={styles.xpLabel}>XP</span>
+        <span className={styles.xpLabel}>{`XP ${xpInLevel}/${XP_PER_LEVEL}`}</span>
         <SegmentedBar
-          value={xpInLevel / xpPerLevel}
-          segments={10}
-          size="sm"
+          value={xpInLevel / XP_PER_LEVEL}
+          segments={XP_SEGMENTS}
+          size="lcd"
           fillColor="var(--lcd-ink)"
+          emptyFillColor="var(--lcd-ink-faint)"
           inkColor="var(--lcd-ink)"
         />
       </div>
@@ -77,23 +82,34 @@ function StatTile({
   peeking: boolean;
   onPeek: () => void;
 }) {
+  const rounded = Math.round(stat.value);
+  const isCritical = stat.value < CRITICAL_THRESHOLD;
+  const fillColor = isCritical ? "var(--stat-fill-red)" : "var(--lcd-ink)";
+
   return (
     <button
       type="button"
       className={styles.statTile}
       onClick={onPeek}
-      aria-label={`${stat.label} ${Math.round(stat.value)} of 100`}
+      aria-label={`${stat.label} ${rounded} of 100`}
     >
       <StatIcon kind={stat.key} size={12} color="var(--lcd-ink)" />
       <SegmentedBar
         value={stat.value / 100}
-        segments={5}
-        size="sm"
-        fillColor="var(--lcd-ink)"
+        segments={STAT_SEGMENTS}
+        size="lcd"
+        fillColor={fillColor}
+        emptyFillColor="var(--lcd-ink-faint)"
         inkColor="var(--lcd-ink)"
         ariaLabel={stat.label}
       />
-      {peeking && <span className={styles.peek}>{Math.round(stat.value)}/100</span>}
+      <span
+        className={`${styles.statValue} ${isCritical ? styles.statValueCritical : ""}`}
+        aria-hidden
+      >
+        {rounded}
+      </span>
+      {peeking && <span className={styles.peek}>{rounded}/100</span>}
     </button>
   );
 }
