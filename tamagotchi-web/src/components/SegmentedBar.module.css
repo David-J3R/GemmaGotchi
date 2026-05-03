@@ -19,6 +19,7 @@
   border-right: none;
 }
 
-.sm { height: 8px; }
-.md { height: 14px; }
-.lg { height: 22px; }
+.sm  { height: 8px; }
+.lcd { height: 12px; }
+.md  { height: 14px; }
+.lg  { height: 22px; }

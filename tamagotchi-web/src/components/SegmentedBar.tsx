@@ -7,14 +7,16 @@ interface Props {
   segments?: number;
   /** CSS color for filled segments. */
   fillColor?: string;
+  /** CSS color for empty segments. Defaults to "transparent". */
+  emptyFillColor?: string;
   /** CSS color for the bar's ink/border. Defaults to current text color. */
   inkColor?: string;
   /** Background color behind segments. */
   bgColor?: string;
   /** Optional aria-label. */
   ariaLabel?: string;
-  /** Visual size — "sm" (LCD stats), "md" (default), "lg" (boot/personality). */
-  size?: "sm" | "md" | "lg";
+  /** Visual size — "sm" (compact), "lcd" (LCD stats, 12px), "md" (default), "lg" (boot/personality). */
+  size?: "sm" | "lcd" | "md" | "lg";
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export function SegmentedBar({
   value,
   segments = 5,
   fillColor,
+  emptyFillColor = "transparent",
   inkColor,
   bgColor,
   ariaLabel,
@@ -31,7 +34,13 @@ export function SegmentedBar({
   const clamped = Math.max(0, Math.min(1, value));
   const filledCount = Math.round(clamped * segments);
   const sizeClass =
-    size === "sm" ? styles.sm : size === "lg" ? styles.lg : styles.md;
+    size === "sm"
+      ? styles.sm
+      : size === "lcd"
+        ? styles.lcd
+        : size === "lg"
+          ? styles.lg
+          : styles.md;
 
   return (
     <div
@@ -51,7 +60,8 @@ export function SegmentedBar({
           key={i}
           className={styles.seg}
           style={{
-            background: i < filledCount ? fillColor ?? "currentColor" : "transparent",
+            background:
+              i < filledCount ? fillColor ?? "currentColor" : emptyFillColor,
           }}
         />
       ))}
