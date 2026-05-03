@@ -1,3 +1,8 @@
+/**
+ * Save-slot picker — shows up to SLOT_COUNT slots, occupied or empty.
+ * Loads slot summaries from IndexedDB on mount, lets the user pick a
+ * pet (→ GameScreen), create a new one (→ CreatePetScreen), or delete.
+ */
 import { useEffect, useState } from "react";
 import { listSaveSlots, loadPet, deleteSave } from "../engine/storage";
 import type { PetState } from "../engine/types";

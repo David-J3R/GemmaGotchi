@@ -1,3 +1,12 @@
+/**
+ * Core type definitions shared across the engine.
+ *
+ * `PetState` is the canonical save object — every other engine module
+ * reads from it and mutates it in-place. Keep it serializable (no
+ * functions, no class instances, no Maps/Sets) so it can round-trip
+ * through `JSON.stringify` for IndexedDB persistence.
+ */
+
 /** All possible pet moods, derived from current stats */
 export type PetMood =
   | "ecstatic"

@@ -1,3 +1,11 @@
+/**
+ * LLM provider interface — backend abstraction for the pet's AI brain.
+ *
+ * Currently the only implementation is `OllamaProvider` (local Ollama
+ * daemon). The provider is owned by `LLMContext`, which exposes a plain
+ * `generate()` function to the rest of the app via the `useLLM` hook.
+ */
+
 export type ProviderName = "ollama";
 
 export interface LoadProgress {

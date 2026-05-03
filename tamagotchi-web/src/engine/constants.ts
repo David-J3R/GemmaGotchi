@@ -1,3 +1,12 @@
+/**
+ * Single source of truth for every tunable game number.
+ *
+ * Per project policy: NO magic numbers in any other engine file. If you
+ * need a threshold, decay rate, probability, or duration, declare it
+ * here and import it. `state.ts`, `actions.ts`, `events.ts`,
+ * `progression.ts`, and `storage.ts` all draw from this file.
+ */
+
 // ── Default stats for a new pet ──────────────────────────────────────
 export const DEFAULT_HUNGER = 80;
 export const DEFAULT_HAPPINESS = 70;

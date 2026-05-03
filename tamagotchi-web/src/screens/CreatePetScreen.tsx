@@ -1,3 +1,11 @@
+/**
+ * Three-step new-pet wizard: name → species → meet.
+ *
+ * On the "meet" step we generate a preview `PetState` so the player can
+ * see the rolled personality (traits, likes/dislikes, quirks) and
+ * Reroll until they're happy. "Hatch" persists the previewed pet via
+ * `createNewPet` and transitions to the game screen.
+ */
 import { useState } from "react";
 import { useGameEngine } from "../hooks/useGameEngine";
 import { createPet } from "../engine/state";

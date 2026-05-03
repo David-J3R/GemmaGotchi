@@ -1,3 +1,13 @@
+/**
+ * Structured response contract for the LLM brain.
+ *
+ * The model is instructed (via `RESPONSE_FORMAT_INSTRUCTION`) to return
+ * a JSON object matching `PetResponse`. `parseResponse` does best-effort
+ * extraction — strips markdown code fences, validates required fields,
+ * clamps numeric ranges, and falls back to a `confused` emotion with
+ * the raw text as speech if anything is malformed. Never throws.
+ */
+
 /** Valid pet emotions for display/animation */
 export type PetEmotion =
   | "happy"

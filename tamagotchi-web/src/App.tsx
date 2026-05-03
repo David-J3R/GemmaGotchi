@@ -1,3 +1,11 @@
+/**
+ * Top-level app shell.
+ *
+ * Wires the LLM provider context + error boundary, then drives a tiny
+ * three-screen state machine: slots → create → game. Mounts the
+ * BootScreen on cold start (no cached model), the SettingsOverlay on
+ * demand, and a StatusLED + settings cog above the slot/create screens.
+ */
 import { useEffect, useState } from "react";
 import { SlotSelectScreen } from "./screens/SlotSelectScreen";
 import { CreatePetScreen } from "./screens/CreatePetScreen";

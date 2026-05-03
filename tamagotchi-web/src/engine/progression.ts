@@ -1,3 +1,11 @@
+/**
+ * XP, leveling, and species evolution.
+ *
+ * Actions grant XP (see `ACTION_XP`); when XP crosses
+ * `xpForLevel(currentLevel)` the pet levels up. At specific levels the
+ * pet evolves into a new species name, gains a stat bonus, and emits an
+ * `evolution` event. Called from `useGameEngine` after each action.
+ */
 import type { PetState, GameEvent } from "./types";
 import { applyStatChanges } from "./state";
 import { XP_PER_LEVEL_MULTIPLIER } from "./constants";

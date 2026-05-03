@@ -1,3 +1,13 @@
+/**
+ * Save / load / offline catch-up for up to N pet slots in IndexedDB.
+ *
+ * Slots are keyed `slot-0`, `slot-1`, … via `idb-keyval`. `applyOfflineTime`
+ * runs when a save is loaded: it advances stats based on real-world
+ * elapsed time (capped at MAX_OFFLINE_MINUTES, decayed at half rate)
+ * and floors health at MIN_OFFLINE_HEALTH so a forgotten pet never dies
+ * while you were away. `fillDefaults` makes loads tolerant to schema
+ * additions — older saves missing newer fields get filled in.
+ */
 import { get, set, del, keys } from "idb-keyval";
 import type { PetState, SaveData, SaveMeta } from "./types";
 import { createMemory } from "./memory";

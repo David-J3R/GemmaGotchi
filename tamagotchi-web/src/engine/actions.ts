@@ -1,3 +1,11 @@
+/**
+ * Player-initiated actions (feed, play, pet, sleep, heal, talk, show).
+ *
+ * `performAction` is the single entry point used by the UI. Each action
+ * either mutates stats locally and returns `needsLLM: false`, or sets
+ * `needsLLM: true` with an `llmContext` — in which case `useGameEngine`
+ * calls into `llm.ts` to get a structured pet response.
+ */
 import type { PetState, ActionResult, GameEvent } from "./types";
 import { applyStatChanges, computeMood } from "./state";
 import {

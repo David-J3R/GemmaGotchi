@@ -1,3 +1,14 @@
+/**
+ * Two-tier pet memory:
+ *   • shortTerm — rolling buffer of the last 5 conversation exchanges,
+ *     replayed verbatim into the system prompt.
+ *   • longTerm  — summarized "things I remember about my owner". When
+ *     this list exceeds 20 entries, `consolidateMemories` asks the LLM
+ *     to compress the oldest 10 down to 3 sentences.
+ *
+ * Memory survives across save/load via `storage.ts`.
+ */
+
 /** LLM generate function signature for memory consolidation */
 export type LLMGenerateFn = (systemPrompt: string, userMessage: string) => Promise<string>;
 

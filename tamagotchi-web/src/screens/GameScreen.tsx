@@ -1,3 +1,12 @@
+/**
+ * Main play screen — pet sprite + stat HUD on the left (DeviceFrame),
+ * chat panel on the right.
+ *
+ * Engine glue is delegated to `useGameEngine`; this file owns UI-local
+ * state: pending-message bubble, attached image preview, eating-animation
+ * flag, and keyboard shortcuts (F=feed, P=play, H=heal, S=sleep, T=focus
+ * chat input).
+ */
 import { useEffect, useRef, useState } from "react";
 import { useGameEngine } from "../hooks/useGameEngine";
 import { useLLM } from "../hooks/useLLM";

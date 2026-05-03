@@ -1,7 +1,7 @@
 /**
- * Returns true if the browser has any cache entries that look like
- * transformers.js / WebGPU model weights. Used to decide whether to
- * show the full BootScreen (cold) or just the StatusLED (warm).
+ * Detects whether the browser has cached model weights from a previous
+ * session. Used by `App.tsx` to decide whether to show the full
+ * BootScreen (cold start) or just the StatusLED (warm start).
  */
 export interface HasCachedModelDeps {
   caches?: CacheStorage;

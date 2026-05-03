@@ -1,3 +1,15 @@
+/**
+ * Prompt assembly + LLM call for the pet's brain.
+ *
+ * This is the only file in the engine that talks to the LLM provider.
+ * It builds the system prompt from personality + relationship + memory
+ * + current stats, builds a user message describing the action (or the
+ * owner's spoken words / shown image), calls the supplied `GenerateFn`,
+ * and parses the structured response via `schema.ts`.
+ *
+ * The provider implementation lives in `../llm/` — passed in as a
+ * function so the engine stays backend-agnostic.
+ */
 import type { PetState, PetMood } from "./types";
 import type { PetResponse } from "./schema";
 import { computeMood } from "./state";

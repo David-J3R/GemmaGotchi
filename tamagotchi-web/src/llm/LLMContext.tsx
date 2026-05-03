@@ -1,3 +1,14 @@
+/**
+ * React context that owns the active LLM provider lifecycle.
+ *
+ * Auto-detects Ollama on mount and initializes it; surfaces ready/loading
+ * state, init errors, and the most recent runtime (generate) error so the
+ * UI can show a StatusLED and BootScreen without each consumer re-doing
+ * provider plumbing. Exposes `generate` (with a graceful fallback string
+ * if the model fails) and `switchProvider` for the settings overlay.
+ *
+ * Consume via the `useLLM` hook — never import this context directly.
+ */
 import {
   createContext,
   useCallback,

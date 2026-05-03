@@ -1,3 +1,13 @@
+/**
+ * Ollama HTTP provider — talks to a local Ollama daemon (default
+ * http://localhost:11434, model `gemma4:e2b`).
+ *
+ * `isAvailable()` pings /api/tags with a short timeout. `generate()`
+ * POSTs to /api/chat with `think: false` so Gemma 4 returns visible
+ * content instead of routing tokens into the hidden `thinking` channel.
+ * `supportsImages()` is true — image bytes (base64) are passed in the
+ * user message's `images` array.
+ */
 import type { LLMProvider, LoadProgress } from "./LLMProvider";
 
 const DEFAULT_BASE_URL = "http://localhost:11434";

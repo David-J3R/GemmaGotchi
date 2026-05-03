@@ -1,3 +1,16 @@
+/**
+ * The bridge between the pure-TS engine and React.
+ *
+ * Owns the active pet, runs the game tick (`TICK_INTERVAL_MS`) and
+ * auto-save (`AUTO_SAVE_INTERVAL_MS`), tracks an `interactedRef` flag
+ * that feeds the relationship system, and orchestrates LLM-routed
+ * actions: action → engine returns `needsLLM` → call `generate` →
+ * apply mood shift → store the exchange in pet memory → consolidate
+ * if needed → push the response into the events log.
+ *
+ * Mutations happen on `petRef.current` for synchronous reads inside the
+ * tick; `syncPet()` then copies into React state to trigger re-renders.
+ */
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { PetState, PetMood, GameEvent } from "../engine/types";
 import type { PetResponse } from "../engine/schema";
