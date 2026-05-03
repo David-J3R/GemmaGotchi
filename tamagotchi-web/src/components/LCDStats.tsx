@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PetState, PetMood } from "../engine/types";
+import { xpForLevel } from "../engine/progression";
 import { SegmentedBar } from "./SegmentedBar";
 import { StatIcon } from "./StatIcon";
 import { MoodIcon } from "./MoodIcon";
@@ -14,7 +15,6 @@ type StatKey = "hunger" | "happiness" | "energy" | "health";
 
 const CRITICAL_THRESHOLD = 30;
 const STAT_SEGMENTS = 4;
-const XP_PER_LEVEL = 100;
 const XP_SEGMENTS = 10;
 
 export function LCDStats({ pet, mood }: Props) {
@@ -27,14 +27,14 @@ export function LCDStats({ pet, mood }: Props) {
     { key: "health",    value: pet.health,    label: "Health" },
   ];
 
-  const xpInLevel = pet.xp % XP_PER_LEVEL;
+  const xpThreshold = xpForLevel(pet.level);
 
   return (
     <div className={styles.lcd}>
       <div className={styles.xpRow}>
-        <span className={styles.xpLabel}>{`XP ${xpInLevel}/${XP_PER_LEVEL}`}</span>
+        <span className={styles.xpLabel}>{`XP ${pet.xp}/${xpThreshold}`}</span>
         <SegmentedBar
-          value={xpInLevel / XP_PER_LEVEL}
+          value={pet.xp / xpThreshold}
           segments={XP_SEGMENTS}
           size="lcd"
           fillColor="var(--lcd-ink)"
