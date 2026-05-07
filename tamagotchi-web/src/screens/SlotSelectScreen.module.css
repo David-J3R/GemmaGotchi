@@ -1,0 +1,44 @@
+.screen {
+  height: 100dvh;
+  min-height: 0;
+  background: var(--stage-bg);
+  padding: 32px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-family: var(--pixel);
+}
+
+.title {
+  text-align: center;
+  font-family: var(--display-pixel);
+  font-size: 24px;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  text-shadow: 2px 2px 0 var(--device-bezel);
+}
+
+.subtitle {
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text-primary);
+  opacity: 0.8;
+  margin-bottom: 8px;
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-primary);
+  font-family: var(--pixel);
+}

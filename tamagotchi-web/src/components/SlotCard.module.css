@@ -1,0 +1,85 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: var(--device-shell);
+  border: var(--border-thick) solid var(--device-bezel);
+  box-shadow: var(--shadow-pixel);
+  color: var(--text-primary);
+  font-family: var(--pixel);
+  text-align: left;
+  cursor: pointer;
+}
+
+.card:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-pixel-press);
+}
+
+.cardEmpty {
+  justify-content: center;
+  background: var(--device-shell);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.previewWrap {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  background: var(--lcd-bg);
+  border: var(--border-thin) solid var(--device-bezel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.meta {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.deleteBtn {
+  background: transparent;
+  border: none;
+  color: #c44;
+  font-size: 1.2rem;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.deleteBtn:hover {
+  background: #fee;
+}
+
+.plusIcon {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-right: 0.5rem;
+  font-weight: 900;
+}
+
+.emptyLabel {
+  font-weight: 700;
+  font-size: 14px;
+}

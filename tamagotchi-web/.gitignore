@@ -22,3 +22,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Videos and photos
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.svg
+*.webp
+*.ico   
+
+# AI and ML files
+*.h5
+*.pt
+*.ckpt
+*.model
+*.claude
+*.gpt
+*.llm

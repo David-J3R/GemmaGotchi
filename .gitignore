@@ -1,71 +1,80 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+node_modules/
+.pnp/
 .pnp.js
 
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
+# Build output
+dist/
 build/
+out/
+.next/
 
-# misc
-.DS_Store
-*.pem
+# Test coverage
+coverage/
 
-# debug
+# TypeScript
+*.tsbuildinfo
+
+# Local env files
+.env
+.env.*.local
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# local env files
-.env*.local
-.env
-.env.development.local
-.env.test.local
-.env.production.local
+# Editor / IDE
+.vscode/
+.cursor/
+.aider*
+.cline/
+.cline*
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# Claude / AI Assistant files
+# Claude / AI Assistant local files
 .claude/
 .claude*
 CLAUDE.md
 claude.json
-.cline/
-.cline*
-.aider*
-.cursor/
 
-# OS generated files
+# OS files
+.DS_Store
 Thumbs.db
-...DS_Store
 
-# Temporary folders
+# Temporary
 .tmp/
-
-# visual studio code
-.vscode/
-.cursor/
-
-# Garbage files
-*.log
 *.tmp
 
-# Images and media
+# Vercel
+.vercel
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Videos and photos
+*.mp4
+*.avi
+*.mov
 *.jpg
 *.jpeg
+*.png
 *.gif
 *.bmp
 *.svg
-*.mp4
+*.webp
+*.ico   

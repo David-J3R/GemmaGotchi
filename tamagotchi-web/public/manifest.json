@@ -1,0 +1,18 @@
+{
+  "name": "AI Tamagotchi",
+  "short_name": "Tamagotchi",
+  "description": "A virtual pet powered by Gemma AI, running entirely in your browser",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#6db87a",
+  "theme_color": "#6db87a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

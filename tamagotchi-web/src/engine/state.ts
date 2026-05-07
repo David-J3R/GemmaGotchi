@@ -1,3 +1,10 @@
+/**
+ * Pet lifecycle: creation, per-tick stat decay, mood derivation, death.
+ *
+ * `tick()` is called by `useGameEngine` every TICK_INTERVAL_MS and is
+ * the only place ambient stats decay. Player actions go through
+ * `actions.ts`; random flavor events go through `events.ts`.
+ */
 import type { PetState, PetMood, StatChanges, GameEvent } from "./types";
 import { generatePersonality } from "./personality";
 import { createMemory } from "./memory";

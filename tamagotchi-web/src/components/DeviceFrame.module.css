@@ -1,0 +1,86 @@
+.device {
+  width: 100%;
+  background: var(--device-shell);
+  border: var(--border-chunky) solid var(--device-bezel);
+  box-shadow: var(--shadow-pixel);
+  border-radius: calc(var(--px) * 6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  font-family: var(--pixel);
+}
+
+.chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px;
+  min-height: 32px;
+  position: relative;
+}
+
+.chromeLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.chromeMid {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.backBtn,
+.settingsBtn {
+  width: 32px;
+  height: 32px;
+  background: var(--device-shell);
+  border: var(--border-thin) solid var(--device-bezel);
+  font-family: var(--pixel);
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lcdWrap {
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
+  background: var(--lcd-bg);
+  border: var(--border-thick) solid var(--device-bezel);
+  border-radius: calc(var(--px) * 4);
+  overflow: hidden;
+}
+
+.spriteOverlay {
+  position: absolute;
+  inset: 76px 8px 58px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.lcdOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 4px;
+}

@@ -1,3 +1,15 @@
+/**
+ * Personality system: species templates → randomized PetPersonality.
+ *
+ * Each species has a base trait profile, a vocabulary level, and pools
+ * of likes/dislikes/quirks. `generatePersonality` jitters the traits
+ * (±15) and picks a random subset of pool items so two pets of the
+ * same species feel distinct.
+ *
+ * `buildPersonalityPrompt` converts the structured personality into the
+ * natural-language block that gets spliced into the LLM system prompt.
+ */
+
 /** Personality traits that define the pet's character */
 export interface PetTraits {
   playfulness: number;   // 0-100: how silly vs serious

@@ -1,0 +1,151 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  background: var(--stage-bg);
+  overflow: hidden;
+  padding: 8px;
+  gap: 8px;
+}
+
+.chatPanel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: var(--border-thick) solid var(--device-bezel);
+  box-shadow: var(--shadow-pixel);
+  font-family: var(--pixel);
+  overflow: hidden;
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--lcd-bg);
+  color: var(--lcd-ink);
+  border-bottom: var(--border-thin) solid var(--device-bezel);
+}
+
+.chatTitle {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.clearChatBtn {
+  width: 24px;
+  height: 24px;
+  border: var(--border-thin) solid var(--device-bezel);
+  background: var(--lcd-bg);
+  font-family: var(--pixel);
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clearChatBtn:disabled {
+  opacity: 0.45;
+}
+
+.chat {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  scrollbar-width: thin;
+  background: #fff;
+}
+
+.chatList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.inputRow {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border-top: var(--border-thin) solid var(--device-bezel);
+  background: var(--lcd-bg);
+}
+
+.imageBtn,
+.sendBtn {
+  width: 32px;
+  height: 32px;
+  border: var(--border-thin) solid var(--device-bezel);
+  background: var(--device-shell);
+  font-family: var(--pixel);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imageBtn:disabled,
+.sendBtn:disabled {
+  opacity: 0.45;
+}
+
+.textInput {
+  flex: 1;
+  min-width: 0;
+  border: var(--border-thin) solid var(--device-bezel);
+  padding: 6px 8px;
+  background: #fff;
+  font-family: var(--pixel);
+  font-size: 12px;
+  outline: none;
+}
+
+.textInput:focus {
+  background: #fffae0;
+}
+
+.hiddenFile {
+  display: none;
+}
+
+.imageError {
+  margin: 6px 8px;
+  padding: 8px;
+  background: #fff3d6;
+  border: var(--border-thin) solid var(--led-amber);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.loadingCenter {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 32px;
+  font-family: var(--pixel);
+  color: var(--text-primary);
+}
+
+.fallbackBackBtn {
+  font-family: var(--pixel);
+  background: var(--device-shell);
+  border: var(--border-thick) solid var(--device-bezel);
+  box-shadow: var(--shadow-pixel);
+  padding: 8px 16px;
+}

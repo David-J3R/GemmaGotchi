@@ -1,119 +1,319 @@
-import { useEffect } from "react";
+/**
+ * Main play screen — pet sprite + stat HUD on the left (DeviceFrame),
+ * chat panel on the right.
+ *
+ * Engine glue is delegated to `useGameEngine`; this file owns UI-local
+ * state: pending-message bubble, attached image preview, eating-animation
+ * flag, and keyboard shortcuts (F=feed, P=play, H=heal, S=sleep, T=focus
+ * chat input).
+ */
+import { useEffect, useRef, useState } from "react";
 import { useGameEngine } from "../hooks/useGameEngine";
+import { useLLM } from "../hooks/useLLM";
+import { PetViewport } from "../components/PetViewport";
+import { DeviceFrame } from "../components/DeviceFrame";
+import { FlappyBirdMiniGame } from "../components/FlappyBirdMiniGame";
+import {
+  PetBubble,
+  UserBubble,
+  TypingBubble,
+} from "../components/SpeechBubble";
+import {
+  PLAY_ENERGY_THRESHOLD,
+  PLAY_HEALTH_THRESHOLD,
+  PLAY_HUNGER_THRESHOLD,
+} from "../engine/constants";
+import styles from "./GameScreen.module.css";
 
 interface Props {
   slot: number;
   onBack: () => void;
+  onOpenSettings: () => void;
 }
 
-export function GameScreen({ slot, onBack }: Props) {
-  const { pet, mood, events, isLoading, isThinking, welcomeMessage, doAction, loadSlot } =
-    useGameEngine(slot);
+export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
+  const {
+    pet,
+    mood,
+    isLoading,
+    isThinking,
+    lastResponse,
+    doAction,
+    talkToPet,
+    clearConversation,
+    loadSlot,
+  } = useGameEngine(slot);
+
+  const { supportsImages } = useLLM();
+  const [isEating, setIsEating] = useState(false);
+  const [pendingMsg, setPendingMsg] = useState("");
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [userMessage, setUserMessage] = useState("");
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [miniGameOpen, setMiniGameOpen] = useState(false);
+  const [miniGameNotice, setMiniGameNotice] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const chatRef = useRef<HTMLDivElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadSlot(slot);
   }, [slot, loadSlot]);
 
-  if (isLoading) {
-    return <div style={{ textAlign: "center", padding: "2rem" }}>Loading...</div>;
-  }
+  useEffect(() => {
+    chatRef.current?.scrollTo({
+      top: chatRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [pet?.petMemory.shortTerm.length, isThinking, pendingMsg, pendingImage]);
 
-  if (!pet) {
+  // Keyboard shortcuts: F=feed, P=play, H=heal, S=sleep, T=focus chat input.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      switch (e.key.toLowerCase()) {
+        case "f":
+          e.preventDefault();
+          handleAction("feed");
+          break;
+        case "p":
+          e.preventDefault();
+          handleAction("play");
+          break;
+        case "h":
+          e.preventDefault();
+          handleAction("heal");
+          break;
+        case "s":
+          e.preventDefault();
+          handleAction("sleep");
+          break;
+        case "t":
+          e.preventDefault();
+          textInputRef.current?.focus();
+          break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (isLoading) return <div className={styles.loadingCenter}>Loading...</div>;
+
+  if (!pet || !mood) {
     return (
-      <div style={{ textAlign: "center", padding: "2rem" }}>
+      <div className={styles.loadingCenter}>
         <p>No pet found in this slot.</p>
-        <button onClick={onBack}>Back to Slots</button>
+        <button onClick={onBack} className={styles.fallbackBackBtn}>Back to Slots</button>
       </div>
     );
   }
 
-  const statBar = (label: string, value: number) => {
-    const pct = Math.max(0, Math.min(100, value));
-    const color = pct >= 60 ? "#5B8C3E" : pct >= 30 ? "#C4A020" : "#A03030";
-    return (
-      <div style={{ marginBottom: 6 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-          <span>{label}</span>
-          <span>{value}/100</span>
-        </div>
-        <div style={{ background: "#ddd", borderRadius: 4, height: 10, overflow: "hidden" }}>
-          <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s" }} />
-        </div>
-      </div>
-    );
+  const handleAction = (action: "feed" | "play" | "heal" | "sleep") => {
+    if (action === "feed") {
+      setIsEating(true);
+      setTimeout(() => setIsEating(false), 900);
+    }
+    if (action === "play") {
+      if (
+        pet.isSleeping ||
+        pet.hunger <= PLAY_HUNGER_THRESHOLD ||
+        pet.energy <= PLAY_ENERGY_THRESHOLD ||
+        pet.health <= PLAY_HEALTH_THRESHOLD
+      ) {
+        setMiniGameNotice(
+          `${pet.name} needs Food > ${PLAY_HUNGER_THRESHOLD}%, Energy > ${PLAY_ENERGY_THRESHOLD}%, and Health > ${PLAY_HEALTH_THRESHOLD}% to play.`,
+        );
+        return;
+      }
+      setMiniGameNotice(null);
+      setMiniGameOpen(true);
+    }
+    doAction(action);
   };
 
+  const handleSend = () => {
+    const trimmed = userMessage.trim();
+    if (!trimmed || isThinking) return;
+    setPendingMsg(trimmed);
+    setUserMessage("");
+    talkToPet(trimmed).finally(() => setPendingMsg(""));
+  };
+
+  const handleClearConversation = () => {
+    if (isThinking || history.length === 0) return;
+    if (!window.confirm("Delete this conversation history?")) return;
+    clearConversation().catch(() => setImageError("Could not delete the conversation."));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleImageClick = () => {
+    setImageError(null);
+    if (!supportsImages) {
+      setImageError("Current model doesn't support images.");
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = reader.result as string;
+      const base64 = raw.split(",")[1] ?? raw;
+      const caption = userMessage.trim();
+      setPendingImage(raw);
+      setPendingMsg(caption);
+      setUserMessage("");
+      talkToPet(caption, base64).finally(() => {
+        setPendingImage(null);
+        setPendingMsg("");
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const history = pet.petMemory.shortTerm;
+  const petSprite = (
+    <PetViewport
+      species={pet.species}
+      mood={mood}
+      isSleeping={pet.isSleeping}
+      isEating={isEating}
+      pixelScale={7}
+      background={false}
+    />
+  );
+
   return (
-    <div style={{ maxWidth: 400, margin: "0 auto", padding: "1rem" }}>
-      <button onClick={onBack} style={{ marginBottom: "0.5rem" }}>&larr; Back</button>
+    <div className={styles.screen}>
+      <DeviceFrame
+        pet={pet}
+        mood={mood}
+        isThinking={isThinking}
+        petSprite={petSprite}
+        lcdOverlay={
+          miniGameOpen ? (
+            <FlappyBirdMiniGame
+              petName={pet.name}
+              species={pet.species}
+              mood={mood}
+              onClose={() => setMiniGameOpen(false)}
+            />
+          ) : null
+        }
+        onAction={handleAction}
+        onBack={onBack}
+        onOpenSettings={onOpenSettings}
+      />
 
-      <div style={{
-        textAlign: "center",
-        padding: "1rem",
-        border: "2px solid #C9B396",
-        borderRadius: 12,
-        background: "#E8D5B7",
-      }}>
-        <h2 style={{ margin: "0 0 0.25rem" }}>{pet.name}</h2>
-        <p style={{ margin: "0 0 0.5rem", color: "#666" }}>
-          {pet.species} | Level {pet.level} | Mood: {mood}
-          {pet.isSleeping ? " (sleeping)" : ""}
-        </p>
-
-        {welcomeMessage && (
-          <p style={{ fontSize: "0.85rem", color: "#555", fontStyle: "italic" }}>
-            {welcomeMessage}
-          </p>
-        )}
-
-        <div style={{ textAlign: "left", margin: "1rem 0" }}>
-          {statBar("Hunger", pet.hunger)}
-          {statBar("Happiness", pet.happiness)}
-          {statBar("Energy", pet.energy)}
-          {statBar("Health", pet.health)}
+      <div className={styles.chatPanel}>
+        <div className={styles.chatHeader}>
+          <span className={styles.chatTitle}>CHAT</span>
+          <button
+            type="button"
+            className={styles.clearChatBtn}
+            onClick={handleClearConversation}
+            disabled={isThinking || history.length === 0}
+            aria-label="Clear conversation"
+          >
+            ×
+          </button>
+        </div>
+        <div className={styles.chat} ref={chatRef}>
+          <div className={styles.chatList}>
+            {history.map((ex, i) => {
+              const isLatest = i === history.length - 1;
+              return (
+                <div key={`h-${i}`}>
+                  {ex.userMessage && !ex.userMessage.startsWith("[action:") && (
+                    <UserBubble text={ex.userMessage} />
+                  )}
+                  <PetBubble
+                    petName={pet.name}
+                    text={ex.petResponse}
+                    typewriter={false}
+                    emotion={isLatest ? lastResponse?.emotion : undefined}
+                    thought={isLatest ? lastResponse?.innerThought : undefined}
+                    moodShift={isLatest ? lastResponse?.moodShift : undefined}
+                  />
+                </div>
+              );
+            })}
+            {(pendingMsg || pendingImage) && (
+              <UserBubble
+                text={pendingMsg || undefined}
+                imageSrc={pendingImage ?? undefined}
+              />
+            )}
+            {isThinking && <TypingBubble petName={pet.name} />}
+            <div ref={chatEndRef} />
+          </div>
         </div>
 
-        <div style={{ fontSize: "0.8rem", marginBottom: "0.75rem" }}>
-          XP: {pet.xp} | Age: {pet.age} ticks
-        </div>
-
-        {isThinking && (
-          <p style={{ color: "#888", fontStyle: "italic" }}>Thinking...</p>
+        {imageError && (
+          <div className={styles.imageError} onClick={() => setImageError(null)}>
+            {imageError}
+          </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-          {["feed", "play", "pet", "sleep", "heal", "talk"].map((action) => (
-            <button
-              key={action}
-              onClick={() => doAction(action)}
-              disabled={isThinking}
-              style={{
-                padding: "10px 0",
-                fontSize: "0.9rem",
-                textTransform: "capitalize",
-                cursor: isThinking ? "default" : "pointer",
-                border: "2px solid #B8895A",
-                borderRadius: 6,
-                background: isThinking ? "#C0B8A8" : "#D4A574",
-                color: "#2A2A2A",
-              }}
-            >
-              {action}
-            </button>
-          ))}
+        {miniGameNotice && (
+          <div className={styles.imageError} onClick={() => setMiniGameNotice(null)}>
+            {miniGameNotice}
+          </div>
+        )}
+
+        <div className={styles.inputRow}>
+          <button
+            type="button"
+            className={styles.imageBtn}
+            onClick={handleImageClick}
+            disabled={isThinking}
+            aria-label="Send image"
+          >
+            +
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className={styles.hiddenFile}
+            onChange={handleFileChange}
+          />
+          <input
+            ref={textInputRef}
+            type="text"
+            className={styles.textInput}
+            placeholder={`Say something to ${pet.name}...`}
+            value={userMessage}
+            onChange={(e) => setUserMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isThinking}
+          />
+          <button
+            type="button"
+            className={styles.sendBtn}
+            onClick={handleSend}
+            disabled={isThinking || !userMessage.trim()}
+            aria-label="Send"
+          >
+            ▶
+          </button>
         </div>
       </div>
-
-      {events.length > 0 && (
-        <div style={{ marginTop: "1rem", fontSize: "0.8rem", maxHeight: 150, overflowY: "auto" }}>
-          <strong>Events:</strong>
-          {events.slice(-10).map((e, i) => (
-            <div key={i} style={{ color: "#555", padding: "2px 0" }}>
-              {e.message}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

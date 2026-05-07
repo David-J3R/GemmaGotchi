@@ -1,0 +1,63 @@
+.led {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: var(--border-thin) solid var(--device-bezel);
+  border-radius: 50%;
+  background: var(--led-off);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.red    { background: var(--led-red);    }
+.amber  { background: var(--led-amber);  }
+.green  { background: var(--led-green);  }
+.off    { background: var(--led-off);    }
+
+@keyframes ledBlink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.3; }
+}
+
+.blink {
+  animation: ledBlink 1s steps(2, end) infinite;
+}
+
+.popover {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 30;
+  min-width: 200px;
+  padding: 10px;
+  background: #fff;
+  border: var(--border-thick) solid var(--device-bezel);
+  box-shadow: var(--shadow-pixel);
+  font-family: var(--pixel);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.popRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.popError {
+  color: var(--led-red);
+  word-break: break-word;
+}
+
+.popClose {
+  align-self: flex-end;
+  font-family: var(--pixel);
+  background: var(--device-shell);
+  border: var(--border-thin) solid var(--device-bezel);
+  padding: 4px 8px;
+  font-size: 10px;
+}

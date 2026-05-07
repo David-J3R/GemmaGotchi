@@ -1,6 +1,13 @@
+/**
+ * Save-slot picker — shows up to SLOT_COUNT slots, occupied or empty.
+ * Loads slot summaries from IndexedDB on mount, lets the user pick a
+ * pet (→ GameScreen), create a new one (→ CreatePetScreen), or delete.
+ */
 import { useEffect, useState } from "react";
 import { listSaveSlots, loadPet, deleteSave } from "../engine/storage";
 import type { PetState } from "../engine/types";
+import { SlotCard, EmptySlotCard } from "../components/SlotCard";
+import styles from "./SlotSelectScreen.module.css";
 
 interface Props {
   onSelectSlot: (slot: number) => void;
@@ -10,7 +17,10 @@ interface Props {
 interface SlotInfo {
   slot: number;
   pet: PetState | null;
+  savedAt?: string;
 }
+
+const SLOT_COUNT = 3;
 
 export function SlotSelectScreen({ onSelectSlot, onCreateNew }: Props) {
   const [slots, setSlots] = useState<SlotInfo[]>([]);
@@ -20,16 +30,18 @@ export function SlotSelectScreen({ onSelectSlot, onCreateNew }: Props) {
     async function loadSlots() {
       const occupied = await listSaveSlots();
       const slotInfos: SlotInfo[] = [];
-
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < SLOT_COUNT; i++) {
         if (occupied.includes(i)) {
           const data = await loadPet(i);
-          slotInfos.push({ slot: i, pet: data?.pet ?? null });
+          slotInfos.push({
+            slot: i,
+            pet: data?.pet ?? null,
+            savedAt: data?.meta.savedAt,
+          });
         } else {
           slotInfos.push({ slot: i, pet: null });
         }
       }
-
       setSlots(slotInfos);
       setLoading(false);
     }
@@ -40,63 +52,35 @@ export function SlotSelectScreen({ onSelectSlot, onCreateNew }: Props) {
     if (!confirm("Delete this pet? This cannot be undone.")) return;
     await deleteSave(slot);
     setSlots((prev) =>
-      prev.map((s) => (s.slot === slot ? { slot, pet: null } : s))
+      prev.map((s) => (s.slot === slot ? { slot, pet: null } : s)),
     );
   };
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "2rem" }}>Loading...</div>;
+    return <div className={styles.loading}>Loading...</div>;
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "0 auto", padding: "2rem" }}>
-      <h1 style={{ textAlign: "center", marginBottom: "1.5rem" }}>Your Pets</h1>
-      {slots.map(({ slot, pet }) => (
-        <div
-          key={slot}
-          style={{
-            border: pet ? "2px solid #888" : "2px dashed #aaa",
-            borderRadius: 8,
-            padding: "1rem",
-            marginBottom: "1rem",
-            cursor: "pointer",
-            background: pet ? "#f9f6f0" : "#fafafa",
-          }}
-          onClick={() => (pet ? onSelectSlot(slot) : onCreateNew(slot))}
-        >
-          {pet ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <strong>{pet.name}</strong> the {pet.species}
-                <br />
-                <small>Level {pet.level} | Age: {pet.age} ticks</small>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(slot);
-                }}
-                style={{
-                  background: "#c44",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  padding: "4px 8px",
-                  cursor: "pointer",
-                }}
-              >
-                Delete
-              </button>
-            </div>
+    <div className={styles.screen}>
+      <div>
+        <h1 className={styles.title}>Your Pets</h1>
+        <p className={styles.subtitle}>Choose a pet to play with</p>
+      </div>
+      <div className={styles.slots}>
+        {slots.map(({ slot, pet, savedAt }) =>
+          pet ? (
+            <SlotCard
+              key={slot}
+              pet={pet}
+              lastPlayed={savedAt}
+              onClick={() => onSelectSlot(slot)}
+              onDelete={() => handleDelete(slot)}
+            />
           ) : (
-            <div style={{ textAlign: "center", color: "#999" }}>
-              <span style={{ fontSize: "1.5rem" }}>+</span>
-              <br />
-              New Pet
-            </div>
-          )}
-        </div>
-      ))}
+            <EmptySlotCard key={slot} onClick={() => onCreateNew(slot)} />
+          ),
+        )}
+      </div>
     </div>
   );
 }

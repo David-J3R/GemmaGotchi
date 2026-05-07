@@ -1,3 +1,15 @@
+/**
+ * Prompt assembly + LLM call for the pet's brain.
+ *
+ * This is the only file in the engine that talks to the LLM provider.
+ * It builds the system prompt from personality + relationship + memory
+ * + current stats, builds a user message describing the action (or the
+ * owner's spoken words / shown image), calls the supplied `GenerateFn`,
+ * and parses the structured response via `schema.ts`.
+ *
+ * The provider implementation lives in `../llm/` — passed in as a
+ * function so the engine stays backend-agnostic.
+ */
 import type { PetState, PetMood } from "./types";
 import type { PetResponse } from "./schema";
 import { computeMood } from "./state";
@@ -6,9 +18,12 @@ import { parseResponse, RESPONSE_FORMAT_INSTRUCTION } from "./schema";
 import { buildMemoryPrompt } from "./memory";
 import { buildRelationshipPrompt } from "./relationship";
 
-const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "gemma4:e2b";
-const TIMEOUT_MS = 10_000;
+/** Signature for a backend-agnostic LLM call. Providers supply this. */
+export type GenerateFn = (
+  systemPrompt: string,
+  userMessage: string,
+  image?: string,
+) => Promise<string>;
 
 /** Context instruction appended when an image is included */
 const IMAGE_CONTEXT_INSTRUCTION = `Your owner is showing you something! Look at the image and react naturally.
@@ -18,20 +33,6 @@ const IMAGE_CONTEXT_INSTRUCTION = `Your owner is showing you something! Look at 
 - If you see food, get excited or hungry
 - If you see a person, try to figure out who they are to your owner`;
 
-/** A message in the Ollama chat request */
-interface OllamaChatMessage {
-  role: "system" | "user";
-  content: string;
-  images?: string[];
-}
-
-/** Exact request body sent to Ollama's chat endpoint */
-interface OllamaChatRequest {
-  model: string;
-  messages: OllamaChatMessage[];
-  stream: boolean;
-}
-
 /** Builds the system prompt defining the pet's personality and response rules */
 export function buildSystemPrompt(pet: PetState, mood: PetMood): string {
   const personalitySection = buildPersonalityPrompt(pet.personality);
@@ -39,8 +40,10 @@ export function buildSystemPrompt(pet: PetState, mood: PetMood): string {
   const memorySection = buildMemoryPrompt(pet.petMemory);
 
   return `You are ${pet.name}, a ${pet.species}. You are a virtual pet living on your owner's device.
-You don't have to spend time thinking about how to respond — just react naturally and in character based on your current mood and stats.
-You must respond as fast as possible to keep the interaction feeling lively and engaging. Don't use Thinking... - just reply immediately.
+Your name is ${pet.name}. If your owner asks who you are or asks for your name, answer as ${pet.name}; never treat ${pet.name} as the owner's name.
+Before answering, briefly consider the owner's exact message, recent conversation, your memories, and your current mood.
+Follow simple instructions from your owner when they fit the conversation, while staying in character as ${pet.name}.
+Keep the interaction lively and concise. Do not write out your reasoning or use "Thinking..."; only put the final pet reply in the JSON response.
 
 ${personalitySection}
 
@@ -50,6 +53,8 @@ Current emotional state: ${mood}
 Hunger: ${pet.hunger}/100 | Happiness: ${pet.happiness}/100 | Energy: ${pet.energy}/100 | Health: ${pet.health}/100
 
 Rules:
+- Stay aware of recent conversation and answer follow-up questions using that context
+- If the owner asks you to do a simple conversational task, try to do it
 - Express your current mood through your words and tone
 - If hungry (below 30): mention food, complain about hunger
 - If tired (below 30): yawn, trail off, use "zzz"
@@ -64,80 +69,41 @@ ${RESPONSE_FORMAT_INSTRUCTION}`;
 
 /** Builds the user message including pet state as context */
 export function buildUserMessage(pet: PetState, mood: PetMood, userAction: string): string {
-  return `[Pet state — mood: ${mood}, hunger: ${pet.hunger}, happiness: ${pet.happiness}, energy: ${pet.energy}, health: ${pet.health}]
+  const header = `[Pet state — mood: ${mood}, hunger: ${pet.hunger}, happiness: ${pet.happiness}, energy: ${pet.energy}, health: ${pet.health}]`;
+  const talkPrefix = "talk:";
+  const showPrefix = "show:";
+
+  if (userAction.toLowerCase().startsWith(talkPrefix)) {
+    const message = userAction.slice(talkPrefix.length).trim();
+    return `${header}
+Your owner says to you: "${message}"
+Respond directly to the owner's words, staying in character as ${pet.name}.`;
+  }
+
+  if (userAction.toLowerCase().startsWith(showPrefix)) {
+    const caption = userAction.slice(showPrefix.length).trim();
+    return `${header}
+Your owner shows you something${caption ? ` and says: "${caption}"` : ""}.
+React directly, staying in character as ${pet.name}.`;
+  }
+
+  return `${header}
 The owner performs action: ${userAction}`;
 }
 
 /** Re-export PetResponse for consumers */
 export type { PetResponse } from "./schema";
 
-/** Response shape from the Ollama /api/chat endpoint */
-interface OllamaChatResponse {
-  message?: { content?: string };
-}
-
-/** Builds the exact Ollama request metadata and body for a pet action */
-export function buildOllamaRequest(pet: PetState, action: string): {
-  url: string;
-  body: OllamaChatRequest;
-} {
-  const mood = computeMood(pet);
-  const systemPrompt = buildSystemPrompt(pet, mood);
-  const userMessage = buildUserMessage(pet, mood, action);
-
-  return {
-    url: OLLAMA_URL,
-    body: {
-      model: MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      stream: false,
-    },
-  };
-}
-
-/** Calls Gemma 4 via Ollama's chat API. Returns the pet's response text, or a fallback on failure. */
-export async function callGemma(systemPrompt: string, userMessage: string, imageBase64?: string): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-  const userMsg: OllamaChatMessage = { role: "user", content: userMessage };
-  if (imageBase64) {
-    userMsg.images = [imageBase64];
-  }
-
-  try {
-    const response = await fetch(OLLAMA_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          userMsg,
-        ],
-        stream: false,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      return "*yawns and looks at you curiously*";
-    }
-
-    const data = (await response.json()) as OllamaChatResponse;
-    return data.message?.content ?? "*tilts head and blinks*";
-  } catch {
-    return "*looks up at you and wiggles*";
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-/** High-level function: given a pet and action, builds prompts, calls Gemma, and returns parsed response */
-export async function getPetResponse(pet: PetState, action: string, imageBase64?: string): Promise<PetResponse> {
+/**
+ * Builds prompts for the pet and calls the supplied generate function.
+ * Returns the parsed structured PetResponse.
+ */
+export async function getPetResponse(
+  generate: GenerateFn,
+  pet: PetState,
+  action: string,
+  imageBase64?: string,
+): Promise<PetResponse> {
   const mood = computeMood(pet);
   const systemPrompt = buildSystemPrompt(pet, mood);
   let userMessage = buildUserMessage(pet, mood, action);
@@ -146,6 +112,6 @@ export async function getPetResponse(pet: PetState, action: string, imageBase64?
     userMessage += `\n\n${IMAGE_CONTEXT_INSTRUCTION}`;
   }
 
-  const raw = await callGemma(systemPrompt, userMessage, imageBase64);
+  const raw = await generate(systemPrompt, userMessage, imageBase64);
   return parseResponse(raw);
 }

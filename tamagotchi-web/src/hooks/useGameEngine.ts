@@ -1,9 +1,24 @@
+/**
+ * The bridge between the pure-TS engine and React.
+ *
+ * Owns the active pet, runs the game tick (`TICK_INTERVAL_MS`) and
+ * auto-save (`AUTO_SAVE_INTERVAL_MS`), tracks an `interactedRef` flag
+ * that feeds the relationship system, and orchestrates LLM-routed
+ * actions: action → engine returns `needsLLM` → call `generate` →
+ * apply mood shift → store the exchange in pet memory → consolidate
+ * if needed → push the response into the events log.
+ *
+ * Mutations happen on `petRef.current` for synchronous reads inside the
+ * tick; `syncPet()` then copies into React state to trigger re-renders.
+ */
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { PetState, PetMood, GameEvent } from "../engine/types";
-import { createPet, computeMood, tick, applyStatChanges } from "../engine/state";
+import type { PetResponse } from "../engine/schema";
+import { computeMood, tick, applyStatChanges } from "../engine/state";
 import { performAction } from "../engine/actions";
 import { rollRandomEvents, rollPetInitiatedEvent } from "../engine/events";
 import { getPetResponse } from "../engine/llm";
+import { useLLM } from "./useLLM";
 import { addExchange, addMemory, needsConsolidation, consolidateMemories } from "../engine/memory";
 import { grantXP, checkEvolution } from "../engine/progression";
 import { updateRelationship } from "../engine/relationship";
@@ -17,18 +32,22 @@ export interface UseGameEngineReturn {
   isLoading: boolean;
   isThinking: boolean;
   welcomeMessage: string;
+  lastResponse: PetResponse | null;
   doAction: (actionName: string) => void;
-  talkToPet: (message: string) => Promise<void>;
-  createNewPet: (name: string, species: string, slot: number) => Promise<void>;
+  talkToPet: (message: string, imageBase64?: string) => Promise<void>;
+  clearConversation: () => Promise<void>;
+  createNewPet: (pet: PetState, slot: number) => Promise<void>;
   loadSlot: (slot: number) => Promise<void>;
 }
 
 export function useGameEngine(slot: number = 0): UseGameEngineReturn {
+  const { generate } = useLLM();
   const [pet, setPet] = useState<PetState | null>(null);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isThinking, setIsThinking] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [lastResponse, setLastResponse] = useState<PetResponse | null>(null);
 
   const petRef = useRef<PetState | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -130,15 +149,6 @@ export function useGameEngine(slot: number = 0): UseGameEngineReturn {
     const handleBeforeUnload = () => {
       const p = petRef.current;
       if (p) {
-        // Synchronous save attempt — best effort
-        const meta = {
-          version: 1,
-          savedAt: new Date().toISOString(),
-          engineVersion: "0.1.0",
-        };
-        const data = JSON.stringify({ _meta: meta, pet: p });
-        // Use navigator.sendBeacon as a last resort for persistence
-        // But idb-keyval doesn't support sync — just try async
         savePet(p, slotRef.current).catch(() => {});
       }
     };
@@ -174,7 +184,7 @@ export function useGameEngine(slot: number = 0): UseGameEngineReturn {
 
     if (result.needsLLM) {
       setIsThinking(true);
-      getPetResponse(p, actionName)
+      getPetResponse(generate, p, actionName)
         .then((response) => {
           if (response.moodShift) {
             applyStatChanges(p, {
@@ -182,6 +192,7 @@ export function useGameEngine(slot: number = 0): UseGameEngineReturn {
               energy: response.moodShift.energy,
             });
           }
+          setLastResponse(response);
           addExchange(p.petMemory, actionName, response.speech);
           if (response.memory) {
             addMemory(p.petMemory, response.memory);
@@ -202,32 +213,38 @@ export function useGameEngine(slot: number = 0): UseGameEngineReturn {
         .catch(() => {})
         .finally(() => setIsThinking(false));
     }
-  }, [syncPet]);
+  }, [syncPet, generate]);
 
-  // Talk to pet with a specific message
-  const talkToPet = useCallback(async (message: string) => {
+  // Talk to pet with a specific message, optionally showing an image
+  const talkToPet = useCallback(async (message: string, imageBase64?: string) => {
     const p = petRef.current;
     if (!p) return;
 
     interactedRef.current = true;
     setIsThinking(true);
 
+    const promptText = imageBase64 ? `show: ${message || "look at this!"}` : `talk: ${message}`;
+    const memoryUserMessage = imageBase64
+      ? `[showed image] ${message}`.trim()
+      : message;
+
     try {
-      const response = await getPetResponse(p, `talk: ${message}`);
+      const response = await getPetResponse(generate, p, promptText, imageBase64);
       if (response.moodShift) {
         applyStatChanges(p, {
           happiness: response.moodShift.happiness,
           energy: response.moodShift.energy,
         });
       }
-      addExchange(p.petMemory, message, response.speech);
+      setLastResponse(response);
+      addExchange(p.petMemory, memoryUserMessage, response.speech);
       if (response.memory) {
         addMemory(p.petMemory, response.memory);
         if (needsConsolidation(p.petMemory)) {
           await consolidateMemories(p.petMemory);
         }
       }
-      const xpEvents = grantXP(p, "talk");
+      const xpEvents = grantXP(p, imageBase64 ? "show" : "talk");
       const evoEvent = checkEvolution(p);
       const allEvents: GameEvent[] = [
         ...xpEvents,
@@ -245,11 +262,19 @@ export function useGameEngine(slot: number = 0): UseGameEngineReturn {
     } finally {
       setIsThinking(false);
     }
+  }, [syncPet, generate]);
+
+  const clearConversation = useCallback(async () => {
+    const p = petRef.current;
+    if (!p) return;
+    p.petMemory.shortTerm = [];
+    setLastResponse(null);
+    syncPet();
+    await savePet(p, slotRef.current);
   }, [syncPet]);
 
-  // Create a new pet
-  const createNewPet = useCallback(async (name: string, species: string, s: number) => {
-    const newPet = createPet(name, species);
+  // Create a new pet from a pre-built PetState (so caller can preview personality before saving)
+  const createNewPet = useCallback(async (newPet: PetState, s: number) => {
     petRef.current = newPet;
     slotRef.current = s;
     setPet({ ...newPet });
@@ -267,8 +292,10 @@ export function useGameEngine(slot: number = 0): UseGameEngineReturn {
     isLoading,
     isThinking,
     welcomeMessage,
+    lastResponse,
     doAction,
     talkToPet,
+    clearConversation,
     createNewPet,
     loadSlot,
   };

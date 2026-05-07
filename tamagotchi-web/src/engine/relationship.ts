@@ -1,3 +1,12 @@
+/**
+ * Trust and bond between pet and owner.
+ *
+ * `updateRelationship` is called every tick with whether the owner
+ * interacted this tick. Trust climbs slowly with attention (faster when
+ * the pet is happy) and erodes when ignored. Trust thresholds map to
+ * six bond levels (stranger → bonded), each with its own behavioral
+ * description that gets injected into the LLM system prompt.
+ */
 import type { PetMood } from "./types";
 
 /** Bond level labels indexed by level number */

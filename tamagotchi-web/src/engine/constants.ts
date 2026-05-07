@@ -1,3 +1,12 @@
+/**
+ * Single source of truth for every tunable game number.
+ *
+ * Per project policy: NO magic numbers in any other engine file. If you
+ * need a threshold, decay rate, probability, or duration, declare it
+ * here and import it. `state.ts`, `actions.ts`, `events.ts`,
+ * `progression.ts`, and `storage.ts` all draw from this file.
+ */
+
 // ── Default stats for a new pet ──────────────────────────────────────
 export const DEFAULT_HUNGER = 80;
 export const DEFAULT_HAPPINESS = 70;
@@ -51,7 +60,9 @@ export const HEAL_HAPPINESS = -5;
 
 // ── Action edge-case thresholds ─────────────────────────────────────
 export const FEED_FULL_THRESHOLD = 90;
-export const PLAY_ENERGY_THRESHOLD = 15;
+export const PLAY_HUNGER_THRESHOLD = 45;
+export const PLAY_ENERGY_THRESHOLD = 30;
+export const PLAY_HEALTH_THRESHOLD = 30;
 export const HEAL_HEALTHY_THRESHOLD = 80;
 
 // ── Random event probabilities (per tick, 0-1) ──────────────────────

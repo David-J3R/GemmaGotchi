@@ -1,111 +1,123 @@
+@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* === Pixel design tokens === */
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Pixel scale unit — all spacing/borders snap to multiples */
+  --px: 2px;
+  --border-thin:   var(--px);                /* 2px */
+  --border-thick:  calc(var(--px) * 2);      /* 4px */
+  --border-chunky: calc(var(--px) * 4);      /* 8px */
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* Hard-edge offset shadows (no blur) */
+  --shadow-pixel:        4px 4px 0 #1a1a1a;
+  --shadow-pixel-press:  2px 2px 0 #1a1a1a;
+
+  /* Tap target floor (Apple HIG) */
+  --tap-min: 44px;
+
+  /* LCD palette */
+  --lcd-bg:            #a8c08a;
+  --lcd-ink:           #2d3a1f;
+  --lcd-ink-faint:     rgba(45, 58, 31, 0.35);
+
+  /* Device shell — defaults; overridden per species via inline style on root device element */
+  --device-shell:        #f0c8d0;
+  --device-shell-shadow: #c89aa3;
+  --device-bezel:        #1a1a1a;
+
+  /* Status LED colors */
+  --led-red:    #e84545;
+  --led-amber:  #f5a524;
+  --led-green:  #5b8c3e;
+  --led-off:    #555555;
+
+  /* Wallpaper behind the device */
+  --stage-bg:      #6db87a;
+  --stage-bg-dark: #4d9a5e;
+
+  /* Text */
+  --text-primary: #1a1a1a;
+  --text-muted:   #555555;
+  --text-inverse: #ffffff;
+
+  /* Chat bubbles */
+  --bubble-pet-bg:        #6ba1d8;
+  --bubble-pet-text:      #ffffff;
+  --bubble-user-bg:       #ffffff;
+  --bubble-user-text:     #1a1a1a;
+  --bubble-user-border:   #1a1a1a;
+
+  /* Stat fill (used by SegmentedBar when explicit color not set) */
+  --stat-fill-green:  #5b8c3e;
+  --stat-fill-yellow: #c4a020;
+  --stat-fill-red:    #a03030;
+
+  /* Fonts */
+  --pixel:         "Silkscreen", "Press Start 2P", "Courier New", monospace;
+  --display-pixel: "Silkscreen", "Press Start 2P", "Courier New", monospace;
+  --sans:          "Nunito", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  font: 16px/1.4 var(--sans);
+  color: var(--text-primary);
+  background: var(--stage-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* Pixel art rendering — pin canvases and pixel-marked images to integer scaling */
+canvas,
+img.pixel,
+svg.pixel {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: var(--stage-bg);
+  overflow: hidden;
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-width: 480px;
   margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  background: var(--stage-bg);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
 
-body {
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+h1, h2, h3 {
+  font-family: var(--display-pixel);
+  font-weight: 400;
+  color: var(--text-primary);
   margin: 0;
+  letter-spacing: 0.05em;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
 p {
   margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }

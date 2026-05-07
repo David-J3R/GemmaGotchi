@@ -1,3 +1,11 @@
+/**
+ * Random ambient events that fire each tick (stomach growl, butterfly,
+ * yawning, dancing, etc.) and pet-initiated conversation prompts that
+ * unlock at bond level 2+.
+ *
+ * Pure flavor — no stat changes, only `GameEvent` messages for the
+ * activity log. Probabilities and gating thresholds live in `constants.ts`.
+ */
 import type { PetState, GameEvent } from "./types";
 import {
   EVENT_SHINY_OBJECT_CHANCE,

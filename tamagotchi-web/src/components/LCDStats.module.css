@@ -1,0 +1,116 @@
+.lcd {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--lcd-bg);
+  color: var(--lcd-ink);
+  font-family: var(--pixel);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 6px;
+}
+
+.xpRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xpLabel {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.statsRow,
+.statsRowBottom {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.statsRowBottom {
+  margin-top: auto;
+}
+
+.statTile {
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-rows: 14px 14px;
+  align-items: center;
+  column-gap: 4px;
+  row-gap: 2px;
+  background: transparent;
+  border: none;
+  padding: 2px 0;
+  color: var(--lcd-ink);
+  min-height: 32px;
+  min-width: 0;
+}
+
+.statIcon {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.statLabel {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+.statValue {
+  grid-column: 3;
+  grid-row: 1;
+  font-family: var(--pixel);
+  font-size: 9px;
+  min-width: 26px;
+  text-align: right;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.statValueCritical {
+  color: var(--stat-fill-red);
+}
+
+.statBar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+}
+
+.peek {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  background: var(--lcd-ink);
+  color: var(--lcd-bg);
+  font-size: 9px;
+  padding: 2px 4px;
+  z-index: 2;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.spriteSpacer {
+  flex: 1 1 auto;
+}
+
+.moodSlot {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
