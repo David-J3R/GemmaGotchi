@@ -143,24 +143,6 @@ canonical map of the codebase.
 
 ---
 
-## Adding things
-
-The most common changes:
-
-| I want to... | Start here |
-| --- | --- |
-| Tune any number (decay, threshold, probability, timer) | `tamagotchi-web/src/engine/constants.ts` |
-| Add a new player action | `engine/actions.ts` (+ wire button in `DeviceFrame`/`GameScreen`) |
-| Add a new species | `engine/personality.ts` (`SPECIES_TEMPLATES`) and `sprites/SpriteData.ts` |
-| Add a new pet emotion or response action type | `engine/schema.ts` |
-| Swap the LLM backend | implement `LLMProvider` in `src/llm/`, register in `LLMContext` |
-| Change the device chrome / pixel design tokens | `components/DeviceFrame.tsx` + `src/index.css` |
-
-All tunable numbers live in `engine/constants.ts` by policy — please
-keep magic numbers out of every other engine file.
-
----
-
 ## Troubleshooting
 
 - **"Ollama unreachable" on the Boot Screen** — make sure `ollama
@@ -181,4 +163,4 @@ keep magic numbers out of every other engine file.
 
 ## License
 
-Not yet specified — add a `LICENSE` file before public release.
+Not yet specified.
