@@ -32,7 +32,7 @@ export function SegmentedBar({
   className,
 }: Props) {
   const clamped = Math.max(0, Math.min(1, value));
-  const filledCount = Math.round(clamped * segments);
+  const filledCount = clamped <= 0 ? 0 : Math.ceil(clamped * segments);
   const sizeClass =
     size === "sm"
       ? styles.sm

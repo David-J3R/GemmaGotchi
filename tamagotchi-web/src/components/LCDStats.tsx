@@ -14,17 +14,37 @@ interface Props {
 type StatKey = "hunger" | "happiness" | "energy" | "health";
 
 const CRITICAL_THRESHOLD = 30;
-const STAT_SEGMENTS = 4;
+const WARNING_THRESHOLD = 60;
+const STAT_SEGMENTS = 10;
 const XP_SEGMENTS = 10;
+
+const STAT_DISPLAY: Record<StatKey, { label: string; ariaLabel: string }> = {
+  hunger: {
+    label: "Food",
+    ariaLabel: "Food",
+  },
+  happiness: {
+    label: "Joy",
+    ariaLabel: "Happiness",
+  },
+  energy: {
+    label: "Energy",
+    ariaLabel: "Energy",
+  },
+  health: {
+    label: "Health",
+    ariaLabel: "Health",
+  },
+};
 
 export function LCDStats({ pet, mood }: Props) {
   const [peeking, setPeeking] = useState<StatKey | null>(null);
 
-  const stats: { key: StatKey; value: number; label: string }[] = [
-    { key: "hunger",    value: pet.hunger,    label: "Hunger" },
-    { key: "happiness", value: pet.happiness, label: "Happiness" },
-    { key: "energy",    value: pet.energy,    label: "Energy" },
-    { key: "health",    value: pet.health,    label: "Health" },
+  const stats: { key: StatKey; value: number; label: string; ariaLabel: string }[] = [
+    { key: "hunger", value: pet.hunger, ...STAT_DISPLAY.hunger },
+    { key: "happiness", value: pet.happiness, ...STAT_DISPLAY.happiness },
+    { key: "energy", value: pet.energy, ...STAT_DISPLAY.energy },
+    { key: "health", value: pet.health, ...STAT_DISPLAY.health },
   ];
 
   const xpThreshold = xpForLevel(pet.level);
@@ -78,22 +98,37 @@ function StatTile({
   peeking,
   onPeek,
 }: {
-  stat: { key: StatKey; value: number; label: string };
+  stat: { key: StatKey; value: number; label: string; ariaLabel: string };
   peeking: boolean;
   onPeek: () => void;
 }) {
   const rounded = Math.round(stat.value);
   const isCritical = stat.value < CRITICAL_THRESHOLD;
-  const fillColor = isCritical ? "var(--stat-fill-red)" : "var(--lcd-ink)";
+  const isWarning = !isCritical && stat.value < WARNING_THRESHOLD;
+  const fillColor = isCritical
+    ? "var(--stat-fill-red)"
+    : isWarning
+      ? "var(--stat-fill-yellow)"
+      : "var(--stat-fill-green)";
 
   return (
     <button
       type="button"
       className={styles.statTile}
       onClick={onPeek}
-      aria-label={`${stat.label} ${rounded} of 100`}
+      aria-label={`${stat.ariaLabel} ${rounded} of 100`}
+      title={`${stat.ariaLabel}: ${rounded}/100`}
     >
-      <StatIcon kind={stat.key} size={12} color="var(--lcd-ink)" />
+      <StatIcon kind={stat.key} size={13} color="var(--lcd-ink)" className={styles.statIcon} />
+      <span className={styles.statLabel} aria-hidden>
+        {stat.label}
+      </span>
+      <span
+        className={`${styles.statValue} ${isCritical ? styles.statValueCritical : ""}`}
+        aria-hidden
+      >
+        {rounded}%
+      </span>
       <SegmentedBar
         value={stat.value / 100}
         segments={STAT_SEGMENTS}
@@ -101,15 +136,10 @@ function StatTile({
         fillColor={fillColor}
         emptyFillColor="var(--lcd-ink-faint)"
         inkColor="var(--lcd-ink)"
-        ariaLabel={stat.label}
+        ariaLabel={stat.ariaLabel}
+        className={styles.statBar}
       />
-      <span
-        className={`${styles.statValue} ${isCritical ? styles.statValueCritical : ""}`}
-        aria-hidden
-      >
-        {rounded}
-      </span>
-      {peeking && <span className={styles.peek}>{rounded}/100</span>}
+      {peeking && <span className={styles.peek}>{`${stat.ariaLabel}: ${rounded}/100`}</span>}
     </button>
   );
 }

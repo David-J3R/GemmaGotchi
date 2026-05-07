@@ -27,7 +27,7 @@
 .statsRowBottom {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .statsRowBottom {
@@ -37,37 +37,70 @@
 .statTile {
   position: relative;
   flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-rows: 14px 14px;
   align-items: center;
-  gap: 4px;
+  column-gap: 4px;
+  row-gap: 2px;
   background: transparent;
   border: none;
-  padding: 4px 0;
+  padding: 2px 0;
   color: var(--lcd-ink);
-  min-height: 24px;
+  min-height: 32px;
+  min-width: 0;
+}
+
+.statIcon {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.statLabel {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: left;
 }
 
 .statValue {
+  grid-column: 3;
+  grid-row: 1;
   font-family: var(--pixel);
   font-size: 9px;
-  min-width: 14px;
+  min-width: 26px;
   text-align: right;
-  letter-spacing: 0.02em;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .statValueCritical {
   color: var(--stat-fill-red);
 }
 
+.statBar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+}
+
 .peek {
   position: absolute;
-  bottom: -16px;
+  bottom: -18px;
   left: 0;
   background: var(--lcd-ink);
   color: var(--lcd-bg);
   font-size: 9px;
   padding: 2px 4px;
   z-index: 2;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .spriteSpacer {

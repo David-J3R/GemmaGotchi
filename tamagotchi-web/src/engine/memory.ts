@@ -1,6 +1,6 @@
 /**
  * Two-tier pet memory:
- *   • shortTerm — rolling buffer of the last 5 conversation exchanges,
+ *   • shortTerm — rolling buffer of the last 8 conversation exchanges,
  *     replayed verbatim into the system prompt.
  *   • longTerm  — summarized "things I remember about my owner". When
  *     this list exceeds 20 entries, `consolidateMemories` asks the LLM
@@ -27,7 +27,7 @@ export interface PetMemory {
 }
 
 /** Maximum number of short-term exchanges to keep */
-const SHORT_TERM_LIMIT = 5;
+const SHORT_TERM_LIMIT = 8;
 
 /** Maximum number of long-term memories before consolidation */
 const LONG_TERM_LIMIT = 20;
@@ -119,7 +119,7 @@ export function buildMemoryPrompt(memory: PetMemory): string {
     const lines = memory.shortTerm.map(
       (ex) => `Owner: "${ex.userMessage}"\nYou: "${ex.petResponse}"`
     );
-    sections.push(`Recent conversation:\n${lines.join("\n")}`);
+    sections.push(`Recent conversation to use for context and follow-ups:\n${lines.join("\n")}`);
   }
 
   return sections.join("\n\n");

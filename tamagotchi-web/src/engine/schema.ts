@@ -4,8 +4,8 @@
  * The model is instructed (via `RESPONSE_FORMAT_INSTRUCTION`) to return
  * a JSON object matching `PetResponse`. `parseResponse` does best-effort
  * extraction — strips markdown code fences, validates required fields,
- * clamps numeric ranges, and falls back to a `confused` emotion with
- * the raw text as speech if anything is malformed. Never throws.
+ * clamps numeric ranges, and falls back to a `confused` emotion without
+ * surfacing JSON-shaped failures as speech. Never throws.
  */
 
 /** Valid pet emotions for display/animation */
@@ -22,6 +22,7 @@ export type PetEmotion =
 const VALID_EMOTIONS: ReadonlySet<string> = new Set<PetEmotion>([
   "happy", "excited", "sleepy", "angry", "scared", "love", "confused", "mischievous",
 ]);
+const VALID_EMOTION_VALUES = [...VALID_EMOTIONS];
 
 /** Valid action types the pet can request */
 export type PetActionType =
@@ -36,6 +37,7 @@ export type PetActionType =
 const VALID_ACTION_TYPES: ReadonlySet<string> = new Set<PetActionType>([
   "request_food", "request_play", "request_sleep", "refuse", "gift", "trick", "explore",
 ]);
+const VALID_ACTION_TYPE_VALUES = [...VALID_ACTION_TYPES];
 
 /** Structured response from the pet's AI brain */
 export interface PetResponse {
@@ -52,6 +54,63 @@ export interface PetResponse {
   };
   memory?: string;
 }
+
+/** JSON schema used by providers that support constrained structured output */
+export const PET_RESPONSE_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    speech: {
+      type: "string",
+      minLength: 1,
+      description: "What the pet says out loud, 1-2 short sentences in character.",
+    },
+    emotion: {
+      type: "string",
+      enum: VALID_EMOTION_VALUES,
+    },
+    innerThought: {
+      type: "string",
+      description: "Optional private thought, max 10 words.",
+    },
+    action: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        type: {
+          type: "string",
+          enum: VALID_ACTION_TYPE_VALUES,
+        },
+        intensity: {
+          type: "integer",
+          minimum: 1,
+          maximum: 10,
+        },
+      },
+      required: ["type", "intensity"],
+    },
+    moodShift: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        happiness: {
+          type: "integer",
+          minimum: -10,
+          maximum: 10,
+        },
+        energy: {
+          type: "integer",
+          minimum: -10,
+          maximum: 10,
+        },
+      },
+    },
+    memory: {
+      type: "string",
+    },
+  },
+  required: ["speech", "emotion"],
+} as const;
 
 /** Clamps a number to a range */
 function clampRange(value: number, min: number, max: number): number {
@@ -77,6 +136,46 @@ function extractJSON(raw: string): string | null {
   return null;
 }
 
+function normalizeJSONLikeResponse(jsonStr: string): string {
+  return jsonStr
+    .replace(/[\u201c\u201d]/g, "\"")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(
+      /(^|[\r\n])\s*[-*]\s*(?="(?:speech|emotion|innerThought|action|moodShift|memory)"\s*:)/g,
+      "$1",
+    )
+    .replace(/,\s*([}\]])/g, "$1");
+}
+
+function parseJSONRecord(jsonStr: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(jsonStr) as Record<string, unknown>;
+  } catch {
+    const normalized = normalizeJSONLikeResponse(jsonStr);
+    if (normalized === jsonStr) return null;
+    try {
+      return JSON.parse(normalized) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function looksLikeStructuredResponse(raw: string): boolean {
+  const trimmed = raw.trim();
+  return (
+    trimmed.startsWith("{") ||
+    /"speech"\s*:/i.test(trimmed) ||
+    /"emotion"\s*:/i.test(trimmed)
+  );
+}
+
+function fallbackSpeech(raw: string): string {
+  const trimmed = raw.trim();
+  if (!looksLikeStructuredResponse(trimmed)) return trimmed;
+  return "*blinks, trying to find the words*";
+}
+
 /** Parses and validates a raw LLM response into a PetResponse. Falls back gracefully on failure. */
 export function parseResponse(raw: string): PetResponse {
   const jsonStr = extractJSON(raw);
@@ -84,16 +183,14 @@ export function parseResponse(raw: string): PetResponse {
     return { speech: raw.trim(), emotion: "confused" };
   }
 
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(jsonStr) as Record<string, unknown>;
-  } catch {
-    return { speech: raw.trim(), emotion: "confused" };
+  const parsed = parseJSONRecord(jsonStr);
+  if (!parsed) {
+    return { speech: fallbackSpeech(raw), emotion: "confused" };
   }
 
   // Validate required field: speech
   if (typeof parsed["speech"] !== "string" || parsed["speech"].length === 0) {
-    return { speech: raw.trim(), emotion: "confused" };
+    return { speech: fallbackSpeech(raw), emotion: "confused" };
   }
 
   const speech = parsed["speech"];

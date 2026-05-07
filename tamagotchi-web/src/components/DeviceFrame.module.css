@@ -65,11 +65,17 @@
 
 .spriteOverlay {
   position: absolute;
-  inset: 32px 8px 32px 8px;
+  inset: 76px 8px 58px 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+}
+
+.lcdOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 
 .buttons {

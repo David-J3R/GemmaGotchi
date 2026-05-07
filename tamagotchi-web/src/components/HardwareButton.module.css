@@ -1,29 +1,44 @@
 .btn {
   --btn-bg: var(--device-shell);
   --btn-bg-shadow: var(--device-shell-shadow);
+  position: relative;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   min-width: 56px;
-  min-height: 56px;
-  padding: 6px 4px;
+  min-height: 62px;
+  padding: 7px 4px 6px;
   background: var(--btn-bg);
   border: var(--border-thick) solid var(--device-bezel);
   border-radius: calc(var(--px) * 2);
   box-shadow: var(--shadow-pixel);
   font-family: var(--pixel);
   font-size: 10px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   color: var(--text-primary);
   transition: transform 0.05s linear, box-shadow 0.05s linear;
+}
+
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: var(--px) var(--px) auto var(--px);
+  height: var(--px);
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
 }
 
 .btn:active:not(:disabled),
 .btn[data-pressed="true"]:not(:disabled) {
   transform: translate(2px, 2px);
   box-shadow: var(--shadow-pixel-press);
+}
+
+.btn:focus-visible {
+  outline: var(--border-thin) solid var(--lcd-ink);
+  outline-offset: 2px;
 }
 
 .btn:disabled {
@@ -34,13 +49,19 @@
 
 .icon {
   display: inline-flex;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 28px;
   align-items: center;
   justify-content: center;
+  color: var(--lcd-ink);
+  background: var(--lcd-bg);
+  border: var(--border-thin) solid var(--device-bezel);
+  box-shadow: 2px 2px 0 var(--device-bezel);
 }
 
 .label {
   text-transform: uppercase;
   font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
 }

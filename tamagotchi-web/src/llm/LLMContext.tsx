@@ -164,10 +164,40 @@ export function LLMContextProvider({
     [initProvider],
   );
 
+  const ensureProvider = useCallback(async (): Promise<LLMProvider> => {
+    const active = providerRef.current;
+    if (active) return active;
+
+    const provider: LLMProvider = new OllamaProvider({
+      baseUrl: ollamaBaseUrl,
+    });
+
+    try {
+      await provider.initialize((p) => setLoadProgress(p));
+      providerRef.current = provider;
+      setProviderName("ollama");
+      setSupportsImages(provider.supportsImages());
+      setError(null);
+      setIsReady(true);
+      return provider;
+    } catch (err) {
+      provider.dispose();
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
+      setIsReady(false);
+      throw err;
+    }
+  }, [ollamaBaseUrl]);
+
   const generate = useCallback<GenerateFn>(
     async (systemPrompt, userMessage, image) => {
-      const p = providerRef.current;
-      if (!p || !isReady) return fallbackGenerate(systemPrompt, userMessage, image);
+      let p: LLMProvider;
+      try {
+        p = await ensureProvider();
+      } catch {
+        return fallbackGenerate(systemPrompt, userMessage, image);
+      }
+
       try {
         const result = await p.generate(systemPrompt, userMessage, image);
         // Clear stale runtime errors on a successful generation.
@@ -180,7 +210,7 @@ export function LLMContextProvider({
         return "*looks up at you and wiggles*";
       }
     },
-    [isReady, initProvider],
+    [ensureProvider],
   );
 
   const value = useMemo<LLMContextValue>(

@@ -15,7 +15,9 @@ import {
   PLAY_HAPPINESS,
   PLAY_ENERGY,
   PLAY_HUNGER,
+  PLAY_HUNGER_THRESHOLD,
   PLAY_ENERGY_THRESHOLD,
+  PLAY_HEALTH_THRESHOLD,
   PET_HAPPINESS,
   HEAL_HEALTH,
   HEAL_HAPPINESS,
@@ -46,13 +48,19 @@ function feed(pet: PetState): ActionResult {
   };
 }
 
-/** Plays with the pet: +happiness, -energy, -hunger. Rejected if sleeping or energy < 15. */
+/** Plays with the pet: +happiness, -energy, -hunger. Rejected unless the pet is in good condition. */
 function play(pet: PetState): ActionResult {
   if (pet.isSleeping) {
     return reject(`${pet.name} is sleeping! Let them rest.`);
   }
-  if (pet.energy < PLAY_ENERGY_THRESHOLD) {
+  if (pet.hunger <= PLAY_HUNGER_THRESHOLD) {
+    return reject(`${pet.name} is too hungry to play!`);
+  }
+  if (pet.energy <= PLAY_ENERGY_THRESHOLD) {
     return reject(`${pet.name} is too tired to play!`);
+  }
+  if (pet.health <= PLAY_HEALTH_THRESHOLD) {
+    return reject(`${pet.name} needs to heal before playing!`);
   }
   applyStatChanges(pet, {
     happiness: PLAY_HAPPINESS,

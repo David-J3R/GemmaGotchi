@@ -12,11 +12,17 @@ import { useGameEngine } from "../hooks/useGameEngine";
 import { useLLM } from "../hooks/useLLM";
 import { PetViewport } from "../components/PetViewport";
 import { DeviceFrame } from "../components/DeviceFrame";
+import { FlappyBirdMiniGame } from "../components/FlappyBirdMiniGame";
 import {
   PetBubble,
   UserBubble,
   TypingBubble,
 } from "../components/SpeechBubble";
+import {
+  PLAY_ENERGY_THRESHOLD,
+  PLAY_HEALTH_THRESHOLD,
+  PLAY_HUNGER_THRESHOLD,
+} from "../engine/constants";
 import styles from "./GameScreen.module.css";
 
 interface Props {
@@ -44,6 +50,8 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState("");
   const [imageError, setImageError] = useState<string | null>(null);
+  const [miniGameOpen, setMiniGameOpen] = useState(false);
+  const [miniGameNotice, setMiniGameNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const chatRef = useRef<HTMLDivElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -109,6 +117,21 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
     if (action === "feed") {
       setIsEating(true);
       setTimeout(() => setIsEating(false), 900);
+    }
+    if (action === "play") {
+      if (
+        pet.isSleeping ||
+        pet.hunger <= PLAY_HUNGER_THRESHOLD ||
+        pet.energy <= PLAY_ENERGY_THRESHOLD ||
+        pet.health <= PLAY_HEALTH_THRESHOLD
+      ) {
+        setMiniGameNotice(
+          `${pet.name} needs Food > ${PLAY_HUNGER_THRESHOLD}%, Energy > ${PLAY_ENERGY_THRESHOLD}%, and Health > ${PLAY_HEALTH_THRESHOLD}% to play.`,
+        );
+        return;
+      }
+      setMiniGameNotice(null);
+      setMiniGameOpen(true);
     }
     doAction(action);
   };
@@ -182,6 +205,16 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
         mood={mood}
         isThinking={isThinking}
         petSprite={petSprite}
+        lcdOverlay={
+          miniGameOpen ? (
+            <FlappyBirdMiniGame
+              petName={pet.name}
+              species={pet.species}
+              mood={mood}
+              onClose={() => setMiniGameOpen(false)}
+            />
+          ) : null
+        }
         onAction={handleAction}
         onBack={onBack}
         onOpenSettings={onOpenSettings}
@@ -234,6 +267,12 @@ export function GameScreen({ slot, onBack, onOpenSettings }: Props) {
         {imageError && (
           <div className={styles.imageError} onClick={() => setImageError(null)}>
             {imageError}
+          </div>
+        )}
+
+        {miniGameNotice && (
+          <div className={styles.imageError} onClick={() => setMiniGameNotice(null)}>
+            {miniGameNotice}
           </div>
         )}
 

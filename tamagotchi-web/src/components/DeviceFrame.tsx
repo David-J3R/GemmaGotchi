@@ -4,7 +4,7 @@ import { getBondLabel } from "../engine/relationship";
 import { LCDStats } from "./LCDStats";
 import { StatusLED } from "./StatusLED";
 import { HardwareButton } from "./HardwareButton";
-import { StatIcon } from "./StatIcon";
+import { ActionIcon } from "./ActionIcon";
 import styles from "./DeviceFrame.module.css";
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   isThinking: boolean;
   /** Pre-rendered pet viewport (canvas). Slotted into the LCD area. */
   petSprite: ReactNode;
+  /** Optional full-LCD overlay, used by active mini-games. */
+  lcdOverlay?: ReactNode;
   onAction: (action: "feed" | "play" | "heal" | "sleep") => void;
   onBack: () => void;
   onOpenSettings: () => void;
@@ -31,6 +33,7 @@ export function DeviceFrame({
   mood,
   isThinking,
   petSprite,
+  lcdOverlay,
   onAction,
   onBack,
   onOpenSettings,
@@ -78,34 +81,35 @@ export function DeviceFrame({
       <div className={styles.lcdWrap}>
         <LCDStats pet={pet} mood={mood} />
         <div className={styles.spriteOverlay}>{petSprite}</div>
+        {lcdOverlay && <div className={styles.lcdOverlay}>{lcdOverlay}</div>}
       </div>
 
       <div className={styles.buttons}>
         <HardwareButton
           label="Feed"
           shortcutKey="F"
-          icon={<StatIcon kind="hunger" size={18} />}
+          icon={<ActionIcon kind="feed" />}
           onClick={() => onAction("feed")}
           disabled={isThinking}
         />
         <HardwareButton
           label="Play"
           shortcutKey="P"
-          icon={<StatIcon kind="happiness" size={18} />}
+          icon={<ActionIcon kind="play" />}
           onClick={() => onAction("play")}
           disabled={isThinking}
         />
         <HardwareButton
           label="Heal"
           shortcutKey="H"
-          icon={<StatIcon kind="health" size={18} />}
+          icon={<ActionIcon kind="heal" />}
           onClick={() => onAction("heal")}
           disabled={isThinking}
         />
         <HardwareButton
           label="Sleep"
           shortcutKey="S"
-          icon={<StatIcon kind="energy" size={18} />}
+          icon={<ActionIcon kind="sleep" />}
           onClick={() => onAction("sleep")}
           disabled={isThinking}
         />

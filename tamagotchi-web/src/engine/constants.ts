@@ -60,7 +60,9 @@ export const HEAL_HAPPINESS = -5;
 
 // ── Action edge-case thresholds ─────────────────────────────────────
 export const FEED_FULL_THRESHOLD = 90;
-export const PLAY_ENERGY_THRESHOLD = 15;
+export const PLAY_HUNGER_THRESHOLD = 45;
+export const PLAY_ENERGY_THRESHOLD = 30;
+export const PLAY_HEALTH_THRESHOLD = 30;
 export const HEAL_HEALTHY_THRESHOLD = 80;
 
 // ── Random event probabilities (per tick, 0-1) ──────────────────────

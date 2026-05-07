@@ -90,13 +90,15 @@ tamagotchi-engine/
     │   │   ├── LCDStats.tsx          ← Hunger/Happy/Energy/Health bars
     │   │   ├── SpeechBubble.tsx      ← Pet/User/Typing bubbles
     │   │   ├── BootScreen.tsx        ← First-load progress overlay
-    │   │   ├── SettingsOverlay.tsx   ← Provider switcher, save export
+    │   │   ├── SettingsOverlay.tsx   ← Provider switcher + save export/import
     │   │   ├── SlotCard.tsx          ← Slot tile on the picker
     │   │   ├── StatusLED.tsx         ← Provider status dot
     │   │   ├── HardwareButton.tsx    ← Plastic-button styled action
     │   │   ├── SegmentedBar.tsx      ← Pixel meter (shared widget)
     │   │   ├── StatIcon.tsx          ← Small pixel stat glyphs
     │   │   ├── MoodIcon.tsx          ← Mood emoji-equivalent
+    │   │   ├── ActionIcon.tsx        ← Pixel SVG icons for hardware buttons
+    │   │   ├── FlappyBirdMiniGame.tsx← LCD-overlay mini-game launched by Play
     │   │   └── ErrorBoundary.tsx
     │   │
     │   └── sprites/
@@ -104,7 +106,11 @@ tamagotchi-engine/
     │       └── SpriteRenderer.ts     ← Canvas renderer + particle FX
     │
     ├── tests/                    ← Vitest tests (mirrors src/ layout)
-    │   └── llm/cache.test.ts
+    │   ├── engine/
+    │   │   └── schema.test.ts        ← parseResponse contract tests
+    │   └── llm/
+    │       ├── cache.test.ts         ← hasCachedModel detection
+    │       └── OllamaProvider.test.ts
     │
     └── docs/superpowers/         ← Design docs for the pixel UI redesign
         ├── specs/
@@ -193,6 +199,22 @@ LLM provider state (which backend, ready/loading/error) is owned by
    activity log. XP/level/evolution checks run after each action.
 7. **Save** — every 60 s + on `beforeunload` + on hook unmount.
 
+### Player input surfaces
+
+- **Hardware buttons** (in `DeviceFrame`): Feed, Play, Heal, Sleep.
+- **Keyboard shortcuts** (registered by `GameScreen`): `F` feed, `P`
+  play, `H` heal, `S` sleep, `T` focuses the chat input. Suppressed
+  while a text input or modifier key is active.
+- **Chat panel** (right of the device): text input → `talk:` action;
+  `+` button opens a file picker → `show:` action with the image bytes
+  passed as base64 to the LLM. There is no hardware button for talk
+  or show.
+- **Play mini-game**: pressing Play opens `FlappyBirdMiniGame` as an
+  LCD overlay — but only if the pet meets `PLAY_HUNGER/ENERGY/HEALTH`
+  thresholds; otherwise `GameScreen` shows a notice instead and the
+  underlying `play` action's stat changes are suppressed by
+  `actions.ts` rejecting it.
+
 ---
 
 ## Lifecycle of one LLM call
@@ -256,7 +278,9 @@ saves missing newer fields get defaulted. Bump `SAVE_VERSION` in
 | Change save backend | `engine/storage.ts` (currently `idb-keyval`) |
 | Add another LLM backend | implement `LLMProvider` in `src/llm/`, register in `LLMContext` |
 | Tune Ollama model / URL | `src/llm/OllamaProvider.ts` (defaults), runtime via `SettingsOverlay` |
+| Add a save export/import format | `engine/storage.ts` (`SaveBundle`) + UI in `SettingsOverlay` |
 | Change the device chrome / layout | `components/DeviceFrame.tsx` + `*.module.css` |
+| Add a mini-game | new component returning a canvas; mount via the `lcdOverlay` slot in `DeviceFrame` |
 | Change the pet sprite or animation | `sprites/SpriteData.ts` and `sprites/SpriteRenderer.ts` |
 | Change pixel design tokens | `src/index.css` (CSS variables) |
 
@@ -285,7 +309,38 @@ error and the chat falls back to a stub response.
   / `Math.random`) inside `engine/` so it stays unit-testable.
 - **Mutation**: engine functions mutate `PetState` in place; the React
   hook calls `syncPet()` to copy into state and trigger a render.
-- **Failures**: LLM `generate` failures degrade gracefully via
-  `fallbackGenerate` + `runtimeError` surfaced through `useLLM`.
+- **Failures**: two distinct LLM error paths.
+  - *Init failure* (Ollama unreachable) → `useLLM` exposes `error`;
+    calls fall through to `fallbackGenerate` returning
+    `"*tilts head and blinks*"`.
+  - *Runtime failure* (a `generate` throws after init) → `useLLM`
+    exposes `runtimeError`; the offending call returns
+    `"*looks up at you and wiggles*"`. The error clears on the next
+    successful generation.
+- **Pixel design tokens**: every spacing, border, and shadow snaps to
+  multiples of `--px` (= 2px) defined in `src/index.css`. Per-species
+  device shell colors override `--device-shell` / `--device-shell-shadow`
+  inline on the `<DeviceFrame>` root (see `SHELL_BY_SPECIES`).
 - **Strict TS**: `strict: true` and `noUncheckedIndexedAccess` are on.
   Index a tuple element? You get `T | undefined`. Live with it.
+
+---
+
+## Common gotchas
+
+- **`PLAY` is gated twice**: `actions.ts` rejects the engine action and
+  `GameScreen` blocks the mini-game launch. Both checks must pass.
+- **Image upload uses the `show:` prefix internally**, even when the
+  player types nothing. `buildUserMessage` parses these prefixes to
+  decide which user template to use.
+- **`Show` has no hardware button** — it only fires from the chat
+  panel's `+` (image) button.
+- **`SAVE_VERSION` is currently 1**. `fillDefaults` is the migration
+  path for additive schema changes; for breaking changes, bump
+  `SAVE_VERSION` and add real migration logic in `loadPet`.
+- **The Service Worker is production-only** (`import.meta.env.PROD` in
+  `main.tsx`). Don't expect SW behavior in `npm run dev`.
+- **`hasCachedModel`** matches cache keys containing `"transformers"`.
+  This is a leftover from an earlier in-browser model attempt; with the
+  Ollama backend it always returns `false` and the BootScreen always
+  shows on cold start.

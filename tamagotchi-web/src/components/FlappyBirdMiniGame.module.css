@@ -1,0 +1,74 @@
+.game {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--lcd-bg);
+  cursor: pointer;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.hud {
+  position: absolute;
+  inset: 8px 8px auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--lcd-ink);
+  font-family: var(--pixel);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.closeBtn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-thin) solid var(--device-bezel);
+  background: var(--device-shell);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.prompt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 136px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: var(--border-thick) solid var(--device-bezel);
+  background: #fff;
+  box-shadow: var(--shadow-pixel);
+  color: var(--text-primary);
+  font-family: var(--pixel);
+  font-size: 11px;
+  text-align: center;
+}
+
+.promptBtn {
+  min-width: 84px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: var(--border-thin) solid var(--device-bezel);
+  background: var(--device-shell);
+  color: var(--text-primary);
+  font-family: var(--pixel);
+  font-size: 10px;
+}

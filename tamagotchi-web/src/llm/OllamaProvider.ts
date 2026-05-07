@@ -3,8 +3,8 @@
  * http://localhost:11434, model `gemma4:e2b`).
  *
  * `isAvailable()` pings /api/tags with a short timeout. `generate()`
- * POSTs to /api/chat with `think: false` so Gemma 4 returns visible
- * content instead of routing tokens into the hidden `thinking` channel.
+ * POSTs to /api/chat in JSON mode so the parser receives structured
+ * content without over-constraining the model's word choices.
  * `supportsImages()` is true — image bytes (base64) are passed in the
  * user message's `images` array.
  */
@@ -115,6 +115,7 @@ export class OllamaProvider implements LLMProvider {
             userMsg,
           ],
           stream: false,
+          format: "json",
           // Gemma 4 is thinking-capable in Ollama. Without this, Ollama may
           // put tokens in message.thinking while message.content stays empty.
           think: false,
