@@ -142,7 +142,6 @@ table — read **[`ARCHITECTURE.md`](./ARCHITECTURE.md)**. It's the
 canonical map of the codebase.
 
 ---
-
 ## Adding things
 
 The most common changes:
@@ -160,7 +159,6 @@ All tunable numbers live in `engine/constants.ts` by policy — please
 keep magic numbers out of every other engine file.
 
 ---
-
 ## Troubleshooting
 
 - **"Ollama unreachable" on the Boot Screen** — make sure `ollama
@@ -178,7 +176,3 @@ keep magic numbers out of every other engine file.
   `tamagotchi-web/public/sw.js` to force a refresh.
 
 ---
-
-## License
-
-Not yet specified — add a `LICENSE` file before public release.
